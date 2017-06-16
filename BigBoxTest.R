@@ -2,11 +2,10 @@
 library(dplyr)
 library(ggplot2)
 library(manipulate)
-setwd('~/R Projects/SWFSC/SonoBuoy')
 source('noiseMatcher.R')
 source('loadGpsDifar.R')
 source('./DIFAR Testing/callGrouper.R')
-buoypath <- 'C:/Users/Taiki/Documents/R Projects/SWFSC/Sonobuoy/spot_messages_RUST_JLK.csv'
+buoypath <- 'spot_messages_RUST_JLK.csv'
 
 noisebig <- loadGpsDifar('./DIFAR Testing/BigBoxTest2.sqlite3', buoypath) %>% mutate(
       Buoy = factor(Channel, levels=c(0,1,2,3), labels=c('NE', 'SW', 'SE', 'NW')),

@@ -33,7 +33,7 @@ drawBearingst <- function(df, plot, distance=4, ...) {
 
 # From here is testing 
 ####
-load('C:/Users/taiki.sakai/Documents/R Projects/SWFSC/AprilTrial/difarApril.RData')
+load('./Data/difarApril.RData')
 difarApril3 <- difarApril3 %>% select(-c(Latitude, Longitude)) %>% 
     rename(Latitude=BuoyLatitude, Longitude=BuoyLongitude)
 

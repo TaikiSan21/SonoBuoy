@@ -7,8 +7,7 @@ library(manipulate)
 library(geosphere)
 library(swfscMisc)
 library(lubridate)
-setwd('~/R Projects/SWFSC/SonoBuoy')
-source('~/R Projects/SWFSC/SonoBuoy/SonoBuoyFunctions.R')
+source('SonoBuoyFunctions.R')
 ###########################################################################
 ###########################################################################
 # FIX MEEE
@@ -16,7 +15,7 @@ source('~/R Projects/SWFSC/SonoBuoy/SonoBuoyFunctions.R')
 ###########################################################################
 
 # Connecting to sqlite
-con <- dbConnect(drv=SQLite(), dbname='PAST_20160607_POST_PB_Edited.sqlite3')
+con <- dbConnect(drv=SQLite(), dbname='./Data/PAST_20160607_POST_PB_Edited.sqlite3')
 
 
 # BuoyHeading column in vesselcal first non-NA numbers for each channel. Should be the offset calibration. Only for station 1.
@@ -34,7 +33,7 @@ gpsData$posixDate <- ymd_hms(gpsData$UTC)
 
 dbDisconnect(con)
 
-con <- dbConnect(drv=SQLite(), dbname='PAST_20160607_POST_VesselCalOnly.sqlite3') 
+con <- dbConnect(drv=SQLite(), dbname='./Data/PAST_20160607_POST_VesselCalOnly.sqlite3') 
 buoyCal <- dbReadTable(con, 'DIFAR_Localisation')
 dbDisconnect(con)
 buoyCal <- data.table(buoyCal)
@@ -49,7 +48,7 @@ calValues$BuoyHeading <- c(10.9, 3.4, 6.7, 12.7) # Median of Real - DIFAR
 calValues$BuoyHeading <- c(9.5, -4.5, 3.5, 6.5) # Jenn new 5/10
 ##################################################################################
 
-buoyGps <- read.csv('spot_messages_RUST_JLK.csv') %>%
+buoyGps <- read.csv('./Data/spot_messages_RUST_JLK.csv') %>%
       mutate(posixDate = mdy_hm(datetime, tz='America/Los_Angeles'),
              posixDate = with_tz(posixDate, tzone='UTC'))
 buoyGps$Channel <- sapply(buoyGps$PlotPoints, function(x) buoyId(x))

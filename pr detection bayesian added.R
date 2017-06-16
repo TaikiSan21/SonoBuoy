@@ -4,7 +4,7 @@ library(swfscMisc)
 set.seed(1)
 
 # read and format data
-df <- read.csv("DIFAR_single_buoy_308.csv")
+df <- read.csv("./Data/DIFAR_single_buoy_308.csv")
 df$Intensity <- as.factor(df$Intensity)
 
 # FALSE if the DIFAR reported is NA, ie. we didn't get the call   

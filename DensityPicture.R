@@ -1,6 +1,5 @@
 library(geosphere)
 library(ggplot2)
-setwd('~/R Projects/SWFSC/SonoBuoy')
 source('SonoBuoyFunctions.R')
 ################################
 ######### TO DO LIST ###########
@@ -119,7 +118,7 @@ grid.density <- function(df, difar1, difar2) {
       df
 }
 
-pairedDifar <- data.table(read.csv('DIFAR_paired_buoys_308.csv'))
+pairedDifar <- data.table(read.csv('./Data/DIFAR_paired_buoys_308.csv'))
 intersonly <- filter(pairedDifar,!(is.na(UTC1)) & !(is.na(UTC2)))
 
 usethis <- intersonly[987,]

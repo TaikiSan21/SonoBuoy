@@ -9,11 +9,9 @@ library(geosphere)
 library(ggplot2)
 library(plotly)
 library(pracma)
-source('~/R Projects/SWFSC/SonoBuoy/SonoBuoyFunctions.R')
-source('~/R Projects/SWFSC/AprilTrial/aprilFunctions.R')
+source('SonoBuoyFunctions.R')
+source('aprilFunctions.R')
 source('~/R Projects/SWFSC/SonoBuoy/diagnosticGraphs.R')
-
-setwd("C:/Users/taiki.sakai/Documents/R Projects/SWFSC/AprilTrial")
 
 # LAST LOCATION FOR CHANNEL 1&2 ARE LIKELY WRONG, 0&3 SHOULD BE FINE
 # ONLY ~10-15% WRONG
@@ -23,7 +21,7 @@ setwd("C:/Users/taiki.sakai/Documents/R Projects/SWFSC/AprilTrial")
 # TRY SHORTER TIMES IN PAMGUARD wut
 
 # Trying to adjust difar times by -30s
-gpx <- readOGR('./PAST_20170427/Data/Vesseltrack 27Apr2017 Current.gpx', layer='track_points')
+gpx <- readOGR('./Data/PAST_20170427/Data/Vesseltrack 27Apr2017 Current.gpx', layer='track_points')
 time <- gpx@data$time
 gps <- data.frame(gpx@coords)
 colnames(gps) <- c('long', 'lat')
@@ -40,7 +38,7 @@ gpxToGps <- function(file) {
     gps
 }
 
-gps1 <- gpxToGps('./PAST_20170427/Data/Vesseltrack 27Apr2017 Current.gpx')
+gps1 <- gpxToGps('./Data/PAST_20170427/Data/Vesseltrack 27Apr2017 Current.gpx')
 
 # dogtag GPS
 dogfiles <- grep('detailed\\.gpx', dir('./DogTracks'), value=TRUE)
@@ -54,7 +52,7 @@ doggpx <- do.call(rbind, lapply(dogfiles, function(x) {
 
 # writeKML(data=gps, outputfile='AprilTrack.kml')
 # qplot(data=gps, x=long, y=lat)
-buoys <- './PAST_20170427/Data/spot_messages (13).csv'
+buoys <- './Data/PAST_20170427/Data/spot_messages (13).csv'
 # r33 to 44 should be the good points
 
 buoy <- read.csv(buoys) %>%
@@ -65,13 +63,13 @@ buoygood <- data.table(buoy)[33:44,]
 buoystart <- arrange(buoygood, posixDate) %>% head(4) %>% rename(UTC=posixDate) %>% 
     select(Latitude, Longitude, Channel, UTC)
 
-difarApril3 <- loadGpsDifarApril('./PAST_20170427/PAST_SBtesting_20170417.sqlite3', buoylocs=buoys)
+difarApril3 <- loadGpsDifarApril('./Data/PAST_20170427/PAST_SBtesting_20170417.sqlite3', buoylocs=buoys)
 
 ##############################
 ## TESTING LOOP DRAW
 ############################
 tadj <- 0
-difarApril3 <- loadGpsDifarApril('./PAST_SBtesting_20170417-3.sqlite3', buoylocs=buoys, adj=tadj)
+difarApril3 <- loadGpsDifarApril('./Data/PAST_SBtesting_20170417-3.sqlite3', buoylocs=buoys, adj=tadj)
 difarApril3 <- unique(select(difarApril3, -Id, -PCTime)) %>% arrange(UTC)
 difarApril3$Species[2020:2099] <- 'Noise'
 qplot(data=filter(difarApril3, Distance>70), x=RealBearing, y=AngleError, color=Distance) + facet_wrap(~Channel, nrow=2)

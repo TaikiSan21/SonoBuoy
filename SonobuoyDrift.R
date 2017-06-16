@@ -4,7 +4,7 @@ library(lubridate)
 library(ggplot2)
 library(swfscMisc)
 # source('~/R Projects/SWFSC/PAMsbuoy/devel/drawBearing.R')
-source('~/R Projects/PAMsbuoy/devel/drawBearing.R')
+source('../PAMsbuoy/devel/drawBearing.R')
 # Sonobuoy drift adapted from MATLAB code
 # We are already matching difar times to boat GPS in difar loading
 # We just need to feed in df with boat data, and grab buoy deployment info

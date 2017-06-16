@@ -4,7 +4,7 @@ library(lubridate)
 library(ggplot2)
 library(swfscMisc)
 # source('~/R Projects/SWFSC/PAMsbuoy/devel/drawBearing.R')
-source('~/R Projects/PAMsbuoy/devel/drawBearing.R')
+source('../PAMsbuoy/devel/drawBearing.R')
 
 # Functions for drift nonsense so I can just source it
 expectedBearing <- function(boat, start, drift.rate, drift.phi) {

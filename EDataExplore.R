@@ -17,11 +17,11 @@ ggplot() + geom_point(data=filter(edata, Species=='Vessel'), aes(x=posixDate, y=
 
 ggplot(data=oldcal, aes(x=BoatLong, y=BoatLat, color=posixDate)) + geom_point()
 
-boatNoise <- loadGpsDifar('C:/Users/Taiki/Documents/R Projects/SWFSC/SonoBuoy/DIFAR Testing/BoatNoiseTest.sqlite3',
-                          'C:/Users/Taiki/Documents/R Projects/SWFSC/SonoBuoy/spot_messages_RUST_JLK.csv')
+boatNoise <- loadGpsDifar('./Data/DIFAR Testing/BoatNoiseTest.sqlite3',
+                          './Data/spot_messages_RUST_JLK.csv')
 
-boatNoiseAll <- loadGpsDifar('C:/Users/Taiki/Documents/R Projects/SWFSC/SonoBuoy/DIFAR Testing/BoatNoiseTest2.sqlite3',
-                          'C:/Users/Taiki/Documents/R Projects/SWFSC/SonoBuoy/spot_messages_RUST_JLK.csv')
+boatNoiseAll <- loadGpsDifar('./Data/DIFAR Testing/BoatNoiseTest2.sqlite3',
+                          './Data/spot_messages_RUST_JLK.csv')
 
 ggplot(boatNoiseAll, aes(color=as.numeric(posixDate))) + geom_point(aes(x=BuoyLongitude, y=BuoyLatitude, shape=as.factor(Channel)), size=3) + 
       geom_point(aes(x=BoatLong, y=BoatLat, shape='Boat')) + scale_colour_gradient(low='black', high='green')

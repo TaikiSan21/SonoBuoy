@@ -1,5 +1,5 @@
 # Timestamp testing
-setwd('C:/Users/Taiki/Documents/R Projects/SWFSC/SonoBuoy/DIFAR Testing/')
+setwd('./DIFAR Testing/')
 library(stringr)
 library(RSQLite)
 library(dplyr)

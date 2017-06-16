@@ -8,23 +8,18 @@ library(geosphere)
 library(caret)
 library(lubridate)
 library(plotly)
-
-setwd('~/R Projects/SWFSC/SonoBuoy')
+library(swfscMisc)
 source('SonoBuoyFunctions.R')
-source('~/R Projects/swfscMisc/R/bearing.R')
-source('~/R Projects/swfscMisc/R/convert.angle.R')
-source('~/R Projects/swfscMisc/R/convert.distance.R')
-source('~/R Projects/swfscMisc/R/distance.R')
-source('~/R Projects/swfscMisc/R/datum.R')
+
 # pairedDifar <- data.table(read.csv('DIFAR_paired_buoys.csv'))
 # finalDifar <- data.table(read.csv('DIFAR_single_buoy.csv')) # this is with my median error. BuoyHeading.y has the offset used
 
-finalDifar <- data.table(read.csv('DIFAR_single_buoy_308.csv')) %>% # using jenns calibration, kept more columns (gain, amplitude freq, milliseconds)
+finalDifar <- data.table(read.csv('./Data/DIFAR_single_buoy_308.csv')) %>% # using jenns calibration, kept more columns (gain, amplitude freq, milliseconds)
       mutate(UTC=ymd_hms(UTC),
              Intensity=as.factor(Intensity),
              PlaybackNumber=as.factor(PlaybackNumber))
 
-pairedDifar <- data.table(read.csv('DIFAR_paired_buoys_308.csv')) # same as above
+pairedDifar <- data.table(read.csv('./Data/DIFAR_paired_buoys_308.csv')) # same as above
       
 # paired <- read.csv('DIFAR_paired_buoys.csv')
 

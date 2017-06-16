@@ -4,7 +4,7 @@ library(swfscMisc)
 set.seed(1)
 
 # read and format data
-df <- read.csv("DetectionData.csv")
+df <- read.csv("./Data/DetectionData.csv")
 df$Intensity <- factor(df$Intensity)
 # FOR TESTING: random indication of detected calls
 df$detected <- sample(0:1, nrow(df), replace = TRUE)
