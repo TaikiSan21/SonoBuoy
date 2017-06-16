@@ -83,8 +83,8 @@ p +
     scale_alpha_continuous(range=c(.1,.6))
 
 # Trying on first trial data. Using boatnoiseall
-useme <- loadGpsDifar('C:/Users/taiki.sakai/Documents/R Projects/SWFSC/SonoBuoy/DIFAR Testing/BoatNoiseTest2.sqlite3',
-                      'C:/Users/taiki.sakai/Documents/R Projects/SWFSC/SonoBuoy/spot_messages_RUST_JLK.csv') %>%
+useme <- loadGpsDifar('./Data/DIFAR Testing/BoatNoiseTest2.sqlite3',
+                      './Data/spot_messages_RUST_JLK.csv') %>%
     mutate(UTC=ymd_hms(UTC)) %>% filter(Channel==0, Distance > 70) %>% arrange(UTC) %>% select(-Longitude, -Latitude) %>%
     rename(Longitude=BoatLong, Latitude=BoatLat) %>% mutate(DIFARBearing=DifarAdj)
 
@@ -135,8 +135,8 @@ gridOptim <- function(values=list(rate=seq(0,3, length.out=100), phi=seq(1,360,1
 ###############################################################
 # useme <- testdata2 %>% rename(BuoyLatitude=buoylat, BuoyLongitude=buoylong)
 # Trying on first trial data. Using boatnoiseall
-useme <- loadGpsDifar('C:/Users/taiki.sakai/Documents/R Projects/SWFSC/SonoBuoy/DIFAR Testing/BoatNoiseTest2.sqlite3',
-                      'C:/Users/taiki.sakai/Documents/R Projects/SWFSC/SonoBuoy/spot_messages_RUST_JLK.csv') %>%
+useme <- loadGpsDifar('./Data/DIFAR Testing/BoatNoiseTest2.sqlite3',
+                      './Data/spot_messages_RUST_JLK.csv') %>%
     mutate(UTC=ymd_hms(UTC)) %>% filter(Channel==3, Distance > 7) %>% arrange(UTC) %>% select(-Longitude, -Latitude) %>%
     rename(Longitude=BoatLong, Latitude=BoatLat) %>% mutate(DIFARBearing=RealBearing)
 
@@ -174,7 +174,7 @@ a <- ggplot(data=useme) + geom_point(aes(x=Longitude, y=Latitude, color=as.numer
     geom_segment(aes(x=start$Longitude, y=start$Latitude, xend=end[1], yend=end[2]), size=2, color='darkgreen') 
 
 drawBearings(useme %>% mutate(DIFARBearing=(DIFARBearing-180)%% 360), a, distance=.3,alpha=.1)
-ggsave('~/R Projects/SWFSC/SonoBuoy/Drift Diagnostic/Ch0 Difar Far Path.png')
+ggsave('./Drift Diagnostic/Ch0 Difar Far Path.png')
 ### 3D PLOT ###
 mat <- t(matrix(d$value, 360, 100))
 plot_ly(z=-log(mat)) %>% add_surface()
@@ -210,8 +210,8 @@ errFuncs <- list(0, 10, 20,
                  c(10, -11.7, -20))
 
 c <- 3
-useme <- loadGpsDifar('C:/Users/taiki.sakai/Documents/R Projects/SWFSC/SonoBuoy/DIFAR Testing/BoatNoiseTest2.sqlite3',
-                      'C:/Users/taiki.sakai/Documents/R Projects/SWFSC/SonoBuoy/spot_messages_RUST_JLK.csv') %>%
+useme <- loadGpsDifar('./Data/DIFAR Testing/BoatNoiseTest2.sqlite3',
+                      './Data/spot_messages_RUST_JLK.csv') %>%
     mutate(UTC=ymd_hms(UTC)) %>% filter(Channel==c) %>% arrange(UTC) %>% select(-Longitude, -Latitude) %>%
     rename(Longitude=BoatLong, Latitude=BoatLat)
 start <- select(useme[1,], UTC, Longitude=BuoyLongitude, Latitude=BuoyLatitude)
@@ -220,7 +220,7 @@ i <- 1
 surfplots <- vector('list', length=length(errFuncs))
 for(e in errFuncs) {
     tmpdf <- useme %>% mutate(DIFARBearing=errFunction(e)(RealBearing) + 15*exp(-Distance/200))
-    surfplots[[i]] <- diagnosticGraphs(tmpdf, start, outpath = '~/R Projects/SWFSC/SonoBuoy/Drift Diagnostic/Simulated Error/',
+    surfplots[[i]] <- diagnosticGraphs(tmpdf, start, outpath = './Drift Diagnostic/Simulated Error/',
                                      name=paste0('Ch', c, ' Function ', paste0(e,collapse='_')))
     i <- i+1
 }
