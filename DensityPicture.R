@@ -1,5 +1,7 @@
 library(geosphere)
 library(ggplot2)
+library(data.table)
+library(dplyr)
 source('SonoBuoyFunctions.R')
 ################################
 ######### TO DO LIST ###########
@@ -81,7 +83,7 @@ grid.build <- function(buoy1, buoy2, difar1, difar2, grid.width=8000, grid.steps
                   geom_label(aes(x=buoy2[2], y=buoy2[1], label='B2', fontface='bold'), colour='darkgreen') +
                   # geom_point(aes(x=int.point$long, y=int.point$lat), colour='purple', size=2) +
                   geom_point(aes(x=max$long, y=max$lat), colour='green', size=5, shape=10) +
-                  geom_contour(data=df, aes(x=longs, y=lats, z=density), breaks=max$density*c(.9, .95)) +
+                  # geom_contour(data=df, aes(x=longs, y=lats, z=density), breaks=max$density*c(.9, .95)) +
                   # geom_point(aes(x=lat1, y=long1), size=5,  colour='orange') + 
                   # geom_point(aes(x=lat2, y=long2), size=5, colour='darkgreen') +
                   #scale_color_manual(breaks=c('orange', 'darkgreen'), values=c('orange', 'darkgreen'), labels=c('Buoy1', 'Buoy2')) +
@@ -110,9 +112,9 @@ grid.density <- function(df, difar1, difar2) {
       df$diff.dens <- 1
       # df$diff.dens <- dnorm((df$dist1-df$dist2)/1500, tdiff, .4)
       # df$diff.dens <- dunif((df$dist1-df$dist2)/1500, tdiff-.5, tdiff+.5)
-      df$density <- df$ang.dens1 * df$ang.dens2 * df$dist.dens1 * df$dist.dens2 * df$diff.dens
+      # df$density <- df$ang.dens1 * df$ang.dens2 * df$dist.dens1 * df$dist.dens2 * df$diff.dens
       #df$density <- df$ang.dens1 * df$ang.dens2
-      #df$density <- dnorm((df$dist1-df$dist2)/1500, tdiff, .4)
+      df$density <- dnorm((df$dist1-df$dist2)/1500, tdiff, .05)
       #print((df$dist1-df$dist2)/1500)
       #print(tdiff)
       df

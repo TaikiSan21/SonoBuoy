@@ -135,7 +135,7 @@ gridOptim <- function(values=list(rate=seq(0,3, length.out=100), phi=seq(1,360,1
 ###############################################################
 # useme <- testdata2 %>% rename(BuoyLatitude=buoylat, BuoyLongitude=buoylong)
 # Trying on first trial data. Using boatnoiseall
-useme <- loadGpsDifar('./Data/DIFAR Testing/BoatNoiseTest2.sqlite3',
+useme <- loadGpsDifar('./DIFAR Testing/BoatNoiseTest2.sqlite3',
                       './Data/spot_messages_RUST_JLK.csv') %>%
     mutate(UTC=ymd_hms(UTC)) %>% filter(Channel==3, Distance > 7) %>% arrange(UTC) %>% select(-Longitude, -Latitude) %>%
     rename(Longitude=BoatLong, Latitude=BoatLat) %>% mutate(DIFARBearing=RealBearing)
@@ -176,9 +176,11 @@ a <- ggplot(data=useme) + geom_point(aes(x=Longitude, y=Latitude, color=as.numer
 drawBearings(useme %>% mutate(DIFARBearing=(DIFARBearing-180)%% 360), a, distance=.3,alpha=.1)
 ggsave('./Drift Diagnostic/Ch0 Difar Far Path.png')
 ### 3D PLOT ###
-mat <- t(matrix(d$value, 360, 100))
-plot_ly(z=-log(mat)) %>% add_surface()
-# export(p, 'test.png')
+mat <- t(matrix(d$value, 181, 75))
+
+# This works at home, tnsakai google login
+plotly_IMAGE(plot_ly(z=-log(mat)) %>% add_surface(), format='png', out_file = 'test.png')
+
 #######################################################
 #### TESTING GRADIENT STUFF MAYBE NOT USEFUL ##########
 grad <- gradient(-log(mat))
