@@ -27,11 +27,25 @@ gpsInterp <- function(accTime, accLong, accLat, newTime) {
 
 # Map buoy id codes from spot (PlotPoints) to matching Channel in DIFAR
 # 709(U): 0, 525(S): 1, 518(R): 2, 609(T): 3 
-buoyId <- function(id) {
+firstTrialId <- function(id) {
       if(id=='0-2571525') 1
       else if(id=='0-2571709') 0
       else if(id=='0-2571609') 3
       else if(id=='0-2571518') 2
+}
+
+aprilTrialId <- function(id) {
+      if(id=='0-2573760') 0
+      else if(id=='0-2572498') 3
+      else if(id=='0-2573891') 2
+      else if(id=='0-2574334') 1
+}
+
+sixTwentyId <- function(id) {
+      if(id=='0-2573891') 0
+      else if(id=='0-2574334') 3
+      else if(id=='0-2573760') 2
+      else if(id=='0-2572498') 1
 }
 
 # Get slope

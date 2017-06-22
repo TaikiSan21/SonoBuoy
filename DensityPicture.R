@@ -123,7 +123,7 @@ grid.density <- function(df, difar1, difar2) {
 pairedDifar <- data.table(read.csv('./Data/DIFAR_paired_buoys_308.csv'))
 intersonly <- filter(pairedDifar,!(is.na(UTC1)) & !(is.na(UTC2)))
 
-usethis <- intersonly[987,]
+usethis <- intersonly[887,]
 
 # usethis <- filter(intersonly, PlaybackNumber=='25', !is.na(UTC1), !is.na(UTC2))
 # usethis <- filter(usethis, distError > 10)[1,]

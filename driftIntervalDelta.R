@@ -83,7 +83,7 @@ p +
     scale_alpha_continuous(range=c(.1,.6))
 
 # Trying on first trial data. Using boatnoiseall
-useme <- loadGpsDifar('./Data/DIFAR Testing/BoatNoiseTest2.sqlite3',
+useme <- loadGpsDifar('./DIFAR Testing/BoatNoiseTest2.sqlite3',
                       './Data/spot_messages_RUST_JLK.csv') %>%
     mutate(UTC=ymd_hms(UTC)) %>% filter(Channel==0, Distance > 70) %>% arrange(UTC) %>% select(-Longitude, -Latitude) %>%
     rename(Longitude=BoatLong, Latitude=BoatLat) %>% mutate(DIFARBearing=DifarAdj)
@@ -91,7 +91,7 @@ useme <- loadGpsDifar('./Data/DIFAR Testing/BoatNoiseTest2.sqlite3',
 start <- select(useme[1,], UTC, Longitude=BuoyLongitude, Latitude=BuoyLatitude)
 
 # ggplot(data=slice(useme, 2:47)) + geom_point(aes(x=Longitude, y=Latitude, color=Distance))
-testdrift <- optim(par=c(0,0), neglogl, boat=useme, start=start, control=list(maxit=10000))
+testdrift <- optim(par=c(0,0), negLogl, boat=useme, start=start, control=list(maxit=10000))
 # testdrift <- optimx(par=c(.5,0), neglogl, boat=slice(useme, 2:n()), start=start,
 #       control=list(maxit=100000, parscale=c(1,1)), method=c('CG'), hessian=TRUE)# ,
       # lower=c(0, 0), upper=c(3,360))
@@ -107,7 +107,7 @@ a <- ggplot(data=useme) + geom_point(aes(x=Longitude, y=Latitude, color=as.numer
 drawBearings(useme %>% mutate(DIFARBearing=(DIFARBearing-180)%% 360), a, distance=.7,alpha=.3)
 
 # Grid search
-negloglgrid <- function(drift.rate, drift.phi, boat, start) {
+negLoglGrid <- function(drift.rate, drift.phi, boat, start) {
     expected <- expectedBearing(boat, start, drift.rate, drift.phi)
     error <- sapply((boat$DIFARBearing - expected) %% 360, function(x) {
         if(x < abs(x-360)) {x}
@@ -142,7 +142,7 @@ useme <- loadGpsDifar('./DIFAR Testing/BoatNoiseTest2.sqlite3',
 
 start <- select(useme[1,], UTC, Longitude=BuoyLongitude, Latitude=BuoyLatitude)
 
-c <- 1
+c <- 3
 # filtStart <- filter(buoystart, Channel==c)
 # filtBoat <- filter(difarApril3, Channel==c, UTC > filtStart$UTC, Distance>7) %>% 
 #     mutate(DIFARBearing = RealBearing)
@@ -150,7 +150,10 @@ c <- 1
 # start <- filtStart
 # Rprof(NULL)
 # Rprof(tmp <- tempfile())
-d <- gridOptim(fun=neglogl,boat=useme, start=start, values=list(rate=seq(0,2,length.out=75), phi=seq(0,360,2)))
+filter(useme, !(Id %in% c(512,513,514))) %>% diagnosticGraphs(start, outpath = './Drift Diagnostic/Simulated Error/',
+                 contours=c(1.1,1.2,1.3,1.4), name=paste0('Ch', c,' RealFirst'))
+
+d <- gridOptim(fun=negLogl,boat=useme, start=start, values=list(rate=seq(0,2,length.out=75), phi=seq(0,360,2)))
 # Rprof()
 # summaryRprof(tmp)
 d <- d %>% mutate(like = exp(-value),
@@ -206,13 +209,11 @@ errFunction <- function(pars) {
     }
 }
 
-errFuncs <- list(0, 10, 20,
-                 c(5, -11.7, 10),
-                 c(10, -11.7, -10),
-                 c(10, -11.7, -20))
+errFuncs <- list(0, 20,
+                 c(20, -11.7, -10))
 
 c <- 3
-useme <- loadGpsDifar('./Data/DIFAR Testing/BoatNoiseTest2.sqlite3',
+useme <- loadGpsDifar('./DIFAR Testing/BoatNoiseTest2.sqlite3',
                       './Data/spot_messages_RUST_JLK.csv') %>%
     mutate(UTC=ymd_hms(UTC)) %>% filter(Channel==c) %>% arrange(UTC) %>% select(-Longitude, -Latitude) %>%
     rename(Longitude=BoatLong, Latitude=BoatLat)
@@ -221,8 +222,12 @@ start <- select(useme[1,], UTC, Longitude=BuoyLongitude, Latitude=BuoyLatitude)
 i <- 1
 surfplots <- vector('list', length=length(errFuncs))
 for(e in errFuncs) {
-    tmpdf <- useme %>% mutate(DIFARBearing=errFunction(e)(RealBearing) + 15*exp(-Distance/200))
+    tmpdf <- useme %>% mutate(DIFARBearing=errFunction(e)(RealBearing) + 30*exp(-Distance/300))
     surfplots[[i]] <- diagnosticGraphs(tmpdf, start, outpath = './Drift Diagnostic/Simulated Error/',
-                                     name=paste0('Ch', c, ' Function ', paste0(e,collapse='_')))
+                                     contours=c(1.1,1.2,1.3,1.4), name=paste0('Ch', c, ' Function ', paste0(e,collapse='_')))
     i <- i+1
 }
+
+x <- 1:1000
+y <- 30*exp(-x/280)
+qplot(x=x, y=y) + geom_hline(yintercept=c(10,7,5))

@@ -33,7 +33,7 @@ expectedBearingDelta <- function(boat, start, drift.rate, drift.phi, delta=list(
     bearings
 }
 
-negloglDelta <- function(boat, start, params) {
+negLoglDelta <- function(boat, start, params) {
     delta <- list(UTC=Inf)
     if(length(params) == 5) {
         delta <- list(rate=params[3], phi=params[4], UTC=start$UTC + params[5])
@@ -46,7 +46,7 @@ negloglDelta <- function(boat, start, params) {
     sum((error)^2)
 }
 
-neglogl <- function(boat, start, drift) {
+negLogl <- function(boat, start, drift) {
     expected <- expectedBearing(boat, start, drift[1], drift[2])
     error <- sapply((boat$DIFARBearing - expected) %% 360, function(x) {
         if(x < abs(x-360)) {x}
