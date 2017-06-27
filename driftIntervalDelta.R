@@ -84,9 +84,10 @@ p +
 
 # Trying on first trial data. Using boatnoiseall
 useme <- loadGpsDifar('./DIFAR Testing/BoatNoiseTest2.sqlite3',
-                      './Data/spot_messages_RUST_JLK.csv') %>%
-    mutate(UTC=ymd_hms(UTC)) %>% filter(Channel==0, Distance > 70) %>% arrange(UTC) %>% select(-Longitude, -Latitude) %>%
-    rename(Longitude=BoatLong, Latitude=BoatLat) %>% mutate(DIFARBearing=DifarAdj)
+                      './Data/spot_messages_RUST_JLK.csv',
+                      buoyfunc=firstTrialId) %>%
+    filter(Channel==0, Distance > 70) %>% arrange(UTC) %>% select(-Longitude, -Latitude) %>%
+    mutate(DIFARBearing=DifarAdj)
 
 start <- select(useme[1,], UTC, Longitude=BuoyLongitude, Latitude=BuoyLatitude)
 
@@ -136,9 +137,10 @@ gridOptim <- function(values=list(rate=seq(0,3, length.out=100), phi=seq(1,360,1
 # useme <- testdata2 %>% rename(BuoyLatitude=buoylat, BuoyLongitude=buoylong)
 # Trying on first trial data. Using boatnoiseall
 useme <- loadGpsDifar('./DIFAR Testing/BoatNoiseTest2.sqlite3',
-                      './Data/spot_messages_RUST_JLK.csv') %>%
-    mutate(UTC=ymd_hms(UTC)) %>% filter(Channel==3, Distance > 7) %>% arrange(UTC) %>% select(-Longitude, -Latitude) %>%
-    rename(Longitude=BoatLong, Latitude=BoatLat) %>% mutate(DIFARBearing=RealBearing)
+                      './Data/spot_messages_RUST_JLK.csv',
+                      buoyfunc = firstTrialId) %>%
+    mutate(UTC=ymd_hms(UTC)) %>% filter(Channel==3, Distance > 7) %>% arrange(UTC) %>%
+    mutate(DIFARBearing=DifarAdj)
 
 start <- select(useme[1,], UTC, Longitude=BuoyLongitude, Latitude=BuoyLatitude)
 
