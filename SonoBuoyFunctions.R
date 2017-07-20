@@ -48,6 +48,13 @@ sixTwentyId <- function(id) {
       else if(id=='0-2572498') 1
 }
 
+sixTwentyEight <- function(id) {
+      if(id=='0-2573891') 3
+      else if(id=='0-2574334') 2
+      else if(id=='0-2573760') 1
+      else if(id=='0-2572498') 0
+}
+
 # Get slope
 
 bearingToSlope <- function(angle) {
