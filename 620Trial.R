@@ -6,6 +6,7 @@ library(lubridate)
 library(RSQLite)
 library(viridisLite)
 library(swfscMisc)
+library(manipulate)
 source('loadGpsDifar.R')
 source('SonoBuoyFunctions.R')
 source('../PAMsbuoy/devel/drawBearing.R')
@@ -14,12 +15,12 @@ buoy <- read.csv('./Data/PAST_20170620/Data/spot_messages.csv') %>%
 #####
 # FOR NOISE CAL STUFF ASK FOR BLUE WHALE ANTARCTIC DATA TO COMPARE LOW FREQUENCY
 #####
-
+# Break stations up?
 
 #### 
 # START TUESDAY AT FILE 21000
 ####
-
+### 19:43 losing highest gain per user input. Then Station 12 is last reliable.
 # Deploy coords from streamer table
 deploy <- data.frame(Latitude=c(32.60034, 32.5999, 32.5995, 32.5992), 
                      Longitude=c(-117.357, -117.3565, -117.35612, -117.3558))
@@ -39,37 +40,57 @@ difarSixTwenty <- function(...) {
             timeId <- c(2:nrow(df), nrow(df))
             df$TimeDiff <- difftime(df[timeId,]$UTC, df$UTC, units='secs')
             df$Station <- sapply(1:nrow(df), function(x) sum(df$TimeDiff[1:(x-1)] > 200))
-            df
+            do.call(rbind, lapply(split(df, df$Station), function(y) {
+                  arrange(y, UTC) %>%
+                        mutate(Order = 1:n())
+            }))
       }))
-      difar      
+      select(difar, -c(snr, RMS, PeakPeak, ZeroPeak, SEL, PCLocalTime, PCTime, TriggerName, TrackedGroup, TrueBearing, BuoyHeading))      
 }
 #################
 difar <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperiment DIFAR - Playback.sqlite3',
                       buoylocs = './Data/PAST_20170620/Data/spot_messages.csv',
                       buoyfunc = sixTwentyId)
 # Look at SA between length - seems same.
-difar %>% filter(grepl('tone', Species), Station %in% 6:10) %>% 
+
+stations <- 6:10
+difar %>% filter(grepl('tone', Species), Station %in% stations) %>% 
       ggplot(aes(x=ClipLength, y=SignalAmplitude, color=Species)) + geom_point() + facet_wrap(Station~Channel)
-# Lets fix some shit #
-lengthClass <- function(x) {
-      if(x > 3.5) 10
-      else if(x > 1.5) 3
-      else 1
-}
-# Time diff
+difar %>% filter(grepl('tone', Species), Station %in% stations) %>% 
+      ggplot(aes(x=ClipLength, y=AdjError, color=Species)) + geom_point() + facet_wrap(Station~Channel)
+# Look at diff length ups/downs. Seems same error. Also SA seems to be same.
+difar %>% filter(!grepl('tone', Species), Station %in% stations) %>% 
+      ggplot(aes(x=ClipLength, y=AdjError, color=grepl('up', Species))) + geom_point() + facet_wrap(Station~Channel) + ylim(-20,20)
 
-difart <- do.call(rbind, lapply(split(difar, difar$Channel), function(x) {
-      df <- arrange(x, UTC)
-      timeId <- c(2:nrow(df), nrow(df))
-      df$TimeDiff <- difftime(df[timeId,]$UTC, df$UTC, units='secs')
-      df$Station <- sapply(1:nrow(df), function(x) sum(df$TimeDiff[1:(x-1)] > 200))
-      df
-}))
+difar %>% filter(!grepl('tone', Species), Station %in% stations) %>% 
+      ggplot(aes(x=ClipLength, y=SignalAmplitude, color=grepl('up', Species))) + geom_point() + facet_wrap(Station~Channel)
+
+# Look at diff between tone/not. They seem to sometimes have very different patterns in SAvsError.
+difar %>% filter(Station %in% 8:12) %>% 
+      ggplot(aes(x=SignalAmplitude, y=AdjError, color=grepl('tone', Species))) + geom_point() + facet_wrap(Channel~Station) + ylim(-20,20)
+####
+difar %>% filter(Station %in% stations) %>% 
+      ggplot(aes(x=ClipLength, y=AdjError, color=grepl('tone', Species))) + geom_point() + facet_wrap(Station~Channel) + ylim(-20,20)
+
+difar %>% filter(Station %in% stations) %>% 
+      ggplot(aes(x=ClipLength, y=SignalAmplitude, color=grepl('tone', Species))) + geom_point() + facet_wrap(Station~Channel)
+#### OKAY, SO SA SEEMS TO BE SAME ACROSS LENGTH. ERROR SEEMS SAME ACROSS LENGTH. BOTH SEEM SAME BETWEEN UP/DN.
+### Channels 2 and 3 sometimes have very sloped weird SA vs Error pattern.
+# SA vs Error. Unexpected pattern.
+difar %>% filter(Station %in% stations) %>% 
+      ggplot(aes(x=log(SignalAmplitude), y=AdjError, color=Distance)) + geom_point() + facet_wrap(Channel~Station) + ylim(-20,20)
 # Station 15 is when we paused for battery swap it seems
-timeId <- c(seq(2, nrow(difar)), nrow(difar))
-difar$TimeDiff <- difftime(difar[timeId,]$UTC, difar$UTC, units='secs')
 
-difar <- mutate(difar, Length = sapply(ClipLength, function(x) lengthClass(x)))
+########### LETS LOOK AT STATION 9:12 TO CHECK OUT WEIRD LINEAR PATTERN
+weirds <- filter(difar, Station %in% 9:12)
+weirds %>% ggplot(aes(x=SignalAmplitude, y=AdjError, color=Order)) + geom_point() + facet_wrap(Station~Channel) + ylim(-20,20)
+# The high error (likely just noise) values are at relatively high SA???
+# 9/2 and 12/3 seem nice and weird.
+looky <- filter(weirds, (Station==9 & Channel==2))
+manipulate({ggplot(looky, aes_string(x='SignalAmplitude', y='AdjError', color=colpick)) + geom_point()},
+           colpick=picker('ClipLength', 'Order', 'Species'))
+
+### Trying to get only last (
 ######### Look at paths #######
 g <- ggplot(data=difar) + geom_point(aes(x=Longitude, y=Latitude, color='Boat')) + 
       geom_point(aes(x=BuoyLongitude, y=BuoyLatitude, color=as.factor(Channel)))
