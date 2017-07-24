@@ -103,3 +103,22 @@ toDirection <- function(angle) {
       else if(angle < 336.5) 'NW'
       else 'N'
 }
+
+difarSixTwenty <- function(...) {
+      difar <- loadGpsDifar(...) %>%
+            mutate(Length=sapply(ClipLength, function(x) {
+                  if(x > 3.5) 10
+                  else if(x > 1.5) 3
+                  else 1}))
+      difar <- do.call(rbind, lapply(split(difar, difar$Channel), function(x) {
+            df <- arrange(x, UTC)
+            timeId <- c(2:nrow(df), nrow(df))
+            df$TimeDiff <- difftime(df[timeId,]$UTC, df$UTC, units='secs')
+            df$Station <- sapply(1:nrow(df), function(x) sum(df$TimeDiff[1:(x-1)] > 200))
+            do.call(rbind, lapply(split(df, df$Station), function(y) {
+                  arrange(y, UTC) %>%
+                        mutate(Order = 1:n())
+            }))
+      }))
+      select(difar, -c(snr, RMS, PeakPeak, ZeroPeak, SEL, PCLocalTime, PCTime, TriggerName, TrackedGroup, TrueBearing, BuoyHeading))      
+}

@@ -7,6 +7,7 @@ library(RSQLite)
 library(viridisLite)
 library(swfscMisc)
 library(manipulate)
+library(ggjoy)
 source('loadGpsDifar.R')
 source('SonoBuoyFunctions.R')
 source('../PAMsbuoy/devel/drawBearing.R')
@@ -25,34 +26,14 @@ buoy <- read.csv('./Data/PAST_20170620/Data/spot_messages.csv') %>%
 deploy <- data.frame(Latitude=c(32.60034, 32.5999, 32.5995, 32.5992), 
                      Longitude=c(-117.357, -117.3565, -117.35612, -117.3558))
 
-buoy %>% filter(hour(datetime) > 7 & hour(datetime) < 11, Longitude>-117.360) %>% ggplot() + geom_point(aes(x=Longitude, y=Latitude, color=PlotPoints)) +
+buoy %>% filter(hour(datetime) > 7 & hour(datetime) < 11, Longitude>-117.360) %>% ggplot() + 
+      geom_point(aes(x=Longitude, y=Latitude, color=PlotPoints)) +
       geom_point(data=deploy, aes(x=Longitude, y=Latitude), size=2)
 
-################
-difarSixTwenty <- function(...) {
-      difar <- loadGpsDifar(...) %>%
-            mutate(Length=sapply(ClipLength, function(x) {
-                  if(x > 3.5) 10
-                  else if(x > 1.5) 3
-                  else 1}))
-      difar <- do.call(rbind, lapply(split(difar, difar$Channel), function(x) {
-            df <- arrange(x, UTC)
-            timeId <- c(2:nrow(df), nrow(df))
-            df$TimeDiff <- difftime(df[timeId,]$UTC, df$UTC, units='secs')
-            df$Station <- sapply(1:nrow(df), function(x) sum(df$TimeDiff[1:(x-1)] > 200))
-            do.call(rbind, lapply(split(df, df$Station), function(y) {
-                  arrange(y, UTC) %>%
-                        mutate(Order = 1:n())
-            }))
-      }))
-      select(difar, -c(snr, RMS, PeakPeak, ZeroPeak, SEL, PCLocalTime, PCTime, TriggerName, TrackedGroup, TrueBearing, BuoyHeading))      
-}
-#################
 difar <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperiment DIFAR - Playback.sqlite3',
                       buoylocs = './Data/PAST_20170620/Data/spot_messages.csv',
                       buoyfunc = sixTwentyId)
 # Look at SA between length - seems same.
-
 stations <- 6:10
 difar %>% filter(grepl('tone', Species), Station %in% stations) %>% 
       ggplot(aes(x=ClipLength, y=SignalAmplitude, color=Species)) + geom_point() + facet_wrap(Station~Channel)
@@ -90,7 +71,29 @@ looky <- filter(weirds, (Station==9 & Channel==2))
 manipulate({ggplot(looky, aes_string(x='SignalAmplitude', y='AdjError', color=colpick)) + geom_point()},
            colpick=picker('ClipLength', 'Order', 'Species'))
 
-### Trying to get only last (
+
+#### WE STILL GET SINS? ##
+difar %>% filter(Distance > 1000) %>% ggplot(aes(x=RealBearing, y=AdjError, color=Distance)) + 
+      geom_point() + facet_wrap(~Channel) + ylim(-20,20) + scale_colour_gradientn(colours=viridis(256))
+# Distribution of errors across stations
+difar %>% filter(Distance > 1000) %>% ggplot(aes(x=AdjError, y=as.factor(Station))) + geom_joy() +
+      facet_wrap(~Channel) + xlim(-20,20)
+
+##### MEDIANS ####
+meds <- difar %>% group_by(Channel, Station, Species) %>% 
+      mutate(Median = median(DIFARBearing, na.rm=TRUE),
+             MedBearing = median(RealBearing, na.rm=TRUE),
+             MedError = MedBearing - Median) %>%
+      ungroup %>% data.frame %>% 
+      mutate(AdjMedian = (MedError - 11.7) %% 360,
+             AdjMedian = sapply(AdjMedian, function(x) {
+                   if(is.na(x)) {x}
+                   else if(x > 180) {x - 360}
+                   else {x}}))
+
+meds %>% filter(Distance > 1000) %>% select(MedBearing, AdjMedian, Channel, Species, Station) %>%
+      distinct() %>% ggplot(aes(x=MedBearing, y=AdjMedian)) + geom_point() +
+      facet_wrap(grepl('tone', Species)~Channel, nrow=2) + ylim(-20,20)                                                               
 ######### Look at paths #######
 g <- ggplot(data=difar) + geom_point(aes(x=Longitude, y=Latitude, color='Boat')) + 
       geom_point(aes(x=BuoyLongitude, y=BuoyLatitude, color=as.factor(Channel)))
