@@ -13,6 +13,11 @@ source('SonoBuoyFunctions.R')
 source('../PAMsbuoy/devel/drawBearing.R')
 buoy <- read.csv('./Data/PAST_20170620/Data/spot_messages.csv') %>%
       mutate(datetime=mdy_hm(datetime))
+####### 7/25 Notes #####
+# Next plan : Get calibration data for channels 1 and 3. Not sure why calibration ones are different. This cal
+# has 660 rows? No idea why it is bigger than the playback one with way more rows.
+# Then gonna have to go and get noise...ugh. 
+
 #####
 # FOR NOISE CAL STUFF ASK FOR BLUE WHALE ANTARCTIC DATA TO COMPARE LOW FREQUENCY
 #####
@@ -33,12 +38,20 @@ buoy %>% filter(hour(datetime) > 7 & hour(datetime) < 11, Longitude>-117.360) %>
 difar <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperiment DIFAR - Playback.sqlite3',
                       buoylocs = './Data/PAST_20170620/Data/spot_messages.csv',
                       buoyfunc = sixTwentyId)
+
+cal <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperiment DIFAR.sqlite3',
+                      buoylocs = './Data/PAST_20170620/Data/spot_messages.csv',
+                      buoyfunc = sixTwentyId)
+## Calibration data looking at how error goes across the path
+cal %>% filter(Distance < 1400) %>% ggplot() + geom_path(aes(x=Longitude, y=Latitude, color=Distance), size=2) + 
+      scale_color_gradientn(colors=viridis(256)) + geom_point(aes(x=BuoyLongitude, y=BuoyLatitude)) + facet_wrap(~Channel)
 # Look at SA between length - seems same.
 stations <- 6:10
 difar %>% filter(grepl('tone', Species), Station %in% stations) %>% 
       ggplot(aes(x=ClipLength, y=SignalAmplitude, color=Species)) + geom_point() + facet_wrap(Station~Channel)
 difar %>% filter(grepl('tone', Species), Station %in% stations) %>% 
       ggplot(aes(x=ClipLength, y=AdjError, color=Species)) + geom_point() + facet_wrap(Station~Channel)
+
 # Look at diff length ups/downs. Seems same error. Also SA seems to be same.
 difar %>% filter(!grepl('tone', Species), Station %in% stations) %>% 
       ggplot(aes(x=ClipLength, y=AdjError, color=grepl('up', Species))) + geom_point() + facet_wrap(Station~Channel) + ylim(-20,20)
@@ -55,6 +68,7 @@ difar %>% filter(Station %in% stations) %>%
 
 difar %>% filter(Station %in% stations) %>% 
       ggplot(aes(x=ClipLength, y=SignalAmplitude, color=grepl('tone', Species))) + geom_point() + facet_wrap(Station~Channel)
+
 #### OKAY, SO SA SEEMS TO BE SAME ACROSS LENGTH. ERROR SEEMS SAME ACROSS LENGTH. BOTH SEEM SAME BETWEEN UP/DN.
 ### Channels 2 and 3 sometimes have very sloped weird SA vs Error pattern.
 # SA vs Error. Unexpected pattern.
@@ -70,7 +84,6 @@ weirds %>% ggplot(aes(x=SignalAmplitude, y=AdjError, color=Order)) + geom_point(
 looky <- filter(weirds, (Station==9 & Channel==2))
 manipulate({ggplot(looky, aes_string(x='SignalAmplitude', y='AdjError', color=colpick)) + geom_point()},
            colpick=picker('ClipLength', 'Order', 'Species'))
-
 
 #### WE STILL GET SINS? ##
 difar %>% filter(Distance > 1000) %>% ggplot(aes(x=RealBearing, y=AdjError, color=Distance)) + 
@@ -93,7 +106,14 @@ meds <- difar %>% group_by(Channel, Station, Species) %>%
 
 meds %>% filter(Distance > 1000) %>% select(MedBearing, AdjMedian, Channel, Species, Station) %>%
       distinct() %>% ggplot(aes(x=MedBearing, y=AdjMedian)) + geom_point() +
-      facet_wrap(grepl('tone', Species)~Channel, nrow=2) + ylim(-20,20)                                                               
+      facet_wrap(grepl('tone', Species)~Channel, nrow=2) + ylim(-20,20)
+
+### JUST TRYING FIRST CAL KINE STUFF
+## Id 338 ends first round channel 0 365 ends 2nd
+## Id 57 ends first round of channel 2, next isnt for an hour
+first <- cal %>% filter(Channel==2, Distance > 700, Id <= 57)
+ggplot(first, aes(x=RealBearing, y=AdjError, color=Id)) + geom_point() + scale_color_gradientn(colors=viridis(256)) + xlim(0,360)
+ggplot(first, aes(x=RealBearing, y=AdjError, color = Id <= 338)) + geom_point()
 ######### Look at paths #######
 g <- ggplot(data=difar) + geom_point(aes(x=Longitude, y=Latitude, color='Boat')) + 
       geom_point(aes(x=BuoyLongitude, y=BuoyLatitude, color=as.factor(Channel)))

@@ -1,10 +1,13 @@
 library(dplyr)
 library(stringr)
 library(lubridate)
+library(ggplot2)
+library(ggjoy)
+library(viridisLite)
 source('loadGpsDifar.R')
 path <- 'C:/Users/taiki.sakai/Desktop/Transfer/Transfer/sonobuoys/data/1647_sb/difar/'
 
-############################################ THOUGHTS ###############################################
+########################################## THOUGHTS #################################################
 # Each individual error isn't normally distributed on a normal 0,7 but in aggregate they seem to be #
 # Random effects model - each mean is distributed 0,7 then distributed somehow around that.         #
 # Actual distribution of errors isn't quite centered on 0 - its more like -1 or -2. Could be        # 
@@ -60,7 +63,20 @@ calFromSql <- calFromSql %>% filter(BuoyLatitude > 30, Species=='Vessel') %>%
       ungroup %>% data.frame %>% mutate(MedianError = (RealBearing - DifarAdj - Median) %% 360,
                                         MedianError = sapply(MedianError, function(x) {
                                               if(x > 180) {x-360}
+                                              else {x}}),
+                                        MeanError = (RealBearing - DifarAdj - Mean) %% 360,
+                                        MeanError = sapply(MeanError, function(x) {
+                                              if(x > 180) {x-360}
                                               else {x}}))
+calFromSql <- do.call(rbind, lapply(split(calFromSql, calFromSql$StationBuoy), function(x) {
+      x <- arrange(x, UTC) 
+      mutate(x, BearingChange = (RealBearing - x$RealBearing[1]) %% 360,
+             BearingChange = sapply(BearingChange, function(y) {
+                   if(y > 180) {y-360}
+                   else {y}}),
+             TimeChange = difftime(UTC, x$UTC[1], units='secs'),
+             MaxChange = max(BearingChange)
+             )}))
 # Look at distribution of median or mean errors at each station calibration
 # ILL WANT TO CHECK AGAINST SOME NORMAL DISTRIBUTIONS AGAIN
 calFromSql %>% distinct(StationBuoy, Median, Mean) %>% ggplot() + geom_histogram(aes(x=Mean), binwidth=1)
@@ -72,7 +88,8 @@ calFromSql %>% distinct(StationBuoy, Median, Mean) %>% ggplot() + geom_histogram
 ################ IS THIS ACTUALLY USEFUL? BASICALLY JUST CENTERING OUR SMALL SET OF CALIBRATION DATA ON ITSELF
 ################ IS THERE ANY REASON TO BELIEVE THIS WOULD EXTRAPOLATE OUT TO ALL CALLS RECEIVED
 ################ REALLY JUST SAYING 'HEY LOOK IF WE CENTER OUR DATA IT LOOKS CENTERED ISNT THAT NICE'
-ggplot(calFromSql, aes(x=MedianError)) + geom_histogram(binwidth=1)
+# ^^^^^^^^^^^^ # check cltTest.R - doesn't really seem like the dist we see would come from CLT sort of thing
+ggplot(calFromSql, aes(x=MeanError)) + geom_histogram(binwidth=1) + xlim(-30,30)
 
 # Graphin da errs
 calFromSql %>% ggplot(aes(x=AdjError, fill=Distance > 600)) + 
