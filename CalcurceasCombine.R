@@ -69,6 +69,9 @@ calFromSql %>% distinct(StationBuoy, Median, Mean) %>% ggplot() + geom_histogram
 # what we would want to do in a naive calibration instead of whatever the fuck pamguard is doing. The peak
 # at 0 is really artificial because every single stationbuoy will have a 0 because we subtracted one of the values
 # from itself unless there were an even number of dakine in which case it is averaged between middle 2.
+################ IS THIS ACTUALLY USEFUL? BASICALLY JUST CENTERING OUR SMALL SET OF CALIBRATION DATA ON ITSELF
+################ IS THERE ANY REASON TO BELIEVE THIS WOULD EXTRAPOLATE OUT TO ALL CALLS RECEIVED
+################ REALLY JUST SAYING 'HEY LOOK IF WE CENTER OUR DATA IT LOOKS CENTERED ISNT THAT NICE'
 ggplot(calFromSql, aes(x=MedianError)) + geom_histogram(binwidth=1)
 
 # Graphin da errs
