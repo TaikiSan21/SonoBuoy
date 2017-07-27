@@ -2,9 +2,19 @@
 library(dplyr)
 library(ggplot2)
 library(manipulate)
+source('noiseError.R')
 source('noiseMatcher.R')
 source('loadGpsDifar.R')
 source('./DIFAR Testing/callGrouper.R')
+
+
+### NOTES 7/27 ####
+# It's possible that the conversion between magnetic - real is getting messed up somehwere along
+# the way, seems like the potential errors could be off by ~ 11.7. Or maybe they are just bad.
+# Uncertain if this will actually be useful. Think about how the noise physically happens and is 
+# measured. Doesnt work too well with just SNR, tried SNR + 5 and was doing better. Why?
+# Lets (ugh) get noise data for our new shit, then we have 2 different data sets to try it on.
+###################
 buoypath <- './Data/spot_messages_RUST_JLK.csv'
 
 noise <- loadGpsDifar('./DIFAR Testing/NoiseDifferentBox9.sqlite3', buoypath) %>% mutate(
@@ -14,16 +24,70 @@ noise <- loadGpsDifar('./DIFAR Testing/NoiseDifferentBox9.sqlite3', buoypath) %>
 
 noise <- noiseMatcher(noise)
 
-noisebig <- loadGpsDifar('./DIFAR Testing/BigBoxTest2.sqlite3', buoypath) %>% mutate(
+noisebig <- loadGpsDifar('./DIFAR Testing/BigBoxTest2.sqlite3', buoypath, buoyfunc=firstTrialId) %>% mutate(
       Buoy = factor(Channel, levels=c(0,1,2,3), labels=c('NE', 'SW', 'SE', 'NW')),
       RealRound = round(RealBearing/.5)*.5) %>%
       select(-c(Latitude, Longitude, MatchedAngles, snr, RMS, ZeroPeak, PeakPeak, SEL))
 noisebig <- noiseMatcher(noisebig)
-noisebig <- callGrouper(noisebig)
+noisebig <- callGrouper(noisebig) %>% mutate(NoiseDifar = noiseError(SNR+5, NoiseBearing + 11.7, RealBearing),
+                                             NoiseError = mapply(errorTransform, RealBearing, NoiseDifar),
+                                             ErrorDiff = mapply(errorTransform, AdjError, NoiseError),
+                                             PotentialBearing = DIFARBearing + 11.7 + NoiseError,
+                                             PotentialError = mapply(errorTransform, RealBearing, PotentialBearing)
+                                             )
 noisebig <- noisebig %>% group_by(callId) %>% mutate(MedianDifar=median(DIFARBearing, na.rm=TRUE), 
-                                                     Time=median(posixDate, na.rm=TRUE),
+                                                     Time=median(UTC, na.rm=TRUE),
                                                      MedianSA=median(SignalAmplitude, na.rm=TRUE),
                                                      MaxSA=max(SignalAmplitude, na.rm=TRUE)) %>% data.frame
+
+
+noisebig <- arrange(noisebig, UTC) 
+
+noisebig$nextTime <- noisebig$UTC
+noisebig$nextTime[2:nrow(noisebig)] <- noisebig$UTC[1:(nrow(noisebig)-1)]
+
+noisebig$nextGroup <- (as.numeric(seconds((noisebig$UTC - noisebig$nextTime))) > 20)
+
+
+PlaybackNumber <- 1
+for(i in 1:nrow(noisebig)){
+      PlaybackNumber <- PlaybackNumber + noisebig$nextGroup[i]
+      noisebig$PlaybackNumber[i] <- PlaybackNumber
+}
+# What could we get if we could do this
+noisebig %>% filter(Distance > 1000) %>%
+      ggplot(aes(x=abs(PotentialError), y=abs(AdjError), color=abs(NoiseError))) + geom_point() + geom_abline(slope=1) +
+      xlim(0,120) + ylim(0,150) + geom_vline(xintercept=10, size=2, color='darkgreen', alpha=.5) + facet_wrap(~Channel) +
+      geom_hline(yintercept=10, size=2, color='orange', alpha=.5) + scale_color_gradientn(colors=viridis(256, option='D', direction=-1))
+
+sum(abs(noisebig$AdjError) < 10)
+sum(abs(noisebig$PotentialError) < 10)
+# Why is it getting some so wrong?
+noisebig %>% filter(Distance > 1000, SNR < 10) %>%
+      ggplot(aes(x=NoiseError, y=PotentialError, color=SNR)) + 
+      geom_point() + scale_color_gradientn(colors=viridis(256, direction=-1)) +
+      geom_abline(slope=1) + geom_hline(yintercept=c(-10,10)) + ylim(-50,50)
+
+# Check what noise error should be
+noisebig %>% filter(abs(AdjError) < 40, Distance > 1000) %>% 
+      ggplot(aes(x=AdjError, y=NoiseError, color=SNR)) + geom_point() +
+      facet_wrap(~Channel) + scale_color_gradientn(colors=viridis(256)) + geom_abline(slope=1, size=2, alpha=.5) +
+      ylim(-30, 30) + xlim(-30,30)
+
+# Compare what our error was to what should be
+noisebig %>% filter(Distance > 1000, abs(ErrorDiff) < 35) %>% 
+      ggplot() +geom_point(aes(x=RealBearing, y=NoiseError, color=abs(ErrorDiff))) + facet_wrap(~Channel) +
+      scale_color_gradientn(colors=viridis(256))
+
+# Noise bearings vs real bearings
+noisebig %>% 
+      ggplot(aes(x=RealBearing, y=NoiseError)) + geom_point() + facet_wrap(~Channel)
+
+# What if we could correct difar by this expected noise error
+noisebig %>% filter(Distance > 1000, abs(AngleError) < 45) %>% 
+      ggplot(aes(x=RealBearing, y=DIFARBearing + 11.7 + NoiseError, color= abs(AngleError)))+ 
+      geom_point() + geom_abline(slope=1) + scale_color_gradientn(colors=viridis(256))
+
 # Polar plot shows angle drifting to noise
 ggplot(data=filter(noisebig, PlaybackNumber==9), aes(y=30-SNR, shape=Species)) +  geom_point(aes(x=MedianDifar+11.7, color='D')) +
       geom_point(aes(x=RealBearing, color='R')) +

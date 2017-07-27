@@ -122,3 +122,9 @@ difarSixTwenty <- function(...) {
       }))
       select(difar, -c(snr, RMS, PeakPeak, ZeroPeak, SEL, PCLocalTime, PCTime, TriggerName, TrackedGroup, TrueBearing, BuoyHeading))      
 }
+
+errorTransform <- function(bearing1, bearing2) {
+      error <- (bearing1 - bearing2) %% 360
+      if(error > 180) {error-360}
+      else {error}
+}

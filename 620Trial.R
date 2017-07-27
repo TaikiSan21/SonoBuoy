@@ -14,18 +14,17 @@ source('../PAMsbuoy/devel/drawBearing.R')
 buoy <- read.csv('./Data/PAST_20170620/Data/spot_messages.csv') %>%
       mutate(datetime=mdy_hm(datetime))
 ####### 7/25 Notes #####
-# Next plan : Get calibration data for channels 1 and 3. Not sure why calibration ones are different. This cal
-# has 660 rows? No idea why it is bigger than the playback one with way more rows.
+# Next plan : Get calibration data for channels 1 and 3. Not sure why calibration ones are different.
 # Then gonna have to go and get noise...ugh. 
+# Channel 1 seems to have a bunch of garbage noise in the first stretch. Missed a bunch because it turned to 180
+# After station 7 gets really quiet
+# 2029 ended
 
 #####
 # FOR NOISE CAL STUFF ASK FOR BLUE WHALE ANTARCTIC DATA TO COMPARE LOW FREQUENCY
 #####
 # Break stations up?
 
-#### 
-# START TUESDAY AT FILE 21000
-####
 ### 19:43 losing highest gain per user input. Then Station 12 is last reliable.
 # Deploy coords from streamer table
 deploy <- data.frame(Latitude=c(32.60034, 32.5999, 32.5995, 32.5992), 
@@ -42,9 +41,11 @@ difar <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperim
 cal <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperiment DIFAR.sqlite3',
                       buoylocs = './Data/PAST_20170620/Data/spot_messages.csv',
                       buoyfunc = sixTwentyId)
+
 ## Calibration data looking at how error goes across the path
 cal %>% filter(Distance < 1400) %>% ggplot() + geom_path(aes(x=Longitude, y=Latitude, color=Distance), size=2) + 
       scale_color_gradientn(colors=viridis(256)) + geom_point(aes(x=BuoyLongitude, y=BuoyLatitude)) + facet_wrap(~Channel)
+
 # Look at SA between length - seems same.
 stations <- 6:10
 difar %>% filter(grepl('tone', Species), Station %in% stations) %>% 
@@ -114,6 +115,7 @@ meds %>% filter(Distance > 1000) %>% select(MedBearing, AdjMedian, Channel, Spec
 first <- cal %>% filter(Channel==2, Distance > 700, Id <= 57)
 ggplot(first, aes(x=RealBearing, y=AdjError, color=Id)) + geom_point() + scale_color_gradientn(colors=viridis(256)) + xlim(0,360)
 ggplot(first, aes(x=RealBearing, y=AdjError, color = Id <= 338)) + geom_point()
+
 ######### Look at paths #######
 g <- ggplot(data=difar) + geom_point(aes(x=Longitude, y=Latitude, color='Boat')) + 
       geom_point(aes(x=BuoyLongitude, y=BuoyLatitude, color=as.factor(Channel)))
@@ -133,6 +135,5 @@ ggplot() + geom_point(data=buoy, aes(x=Longitude, y=Latitude)) +
       coord_cartesian(xlim=c(-117.392,-117.324), ylim=c(32.55, 32.627)) +
       scale_colour_gradientn(colours=viridis(256))
 ###############################
-
 
 # 498-AB 760-AC 334-AE 891-AG

@@ -31,12 +31,19 @@ hat <- function(theta, xg=0, yg=0, dec=0, amp=1) {
         else if(x < 0) (angle+180) %% 360 
     })
 }
+###
+db <- 10
+angle <- 270 * pi / 180
+xg <- cos(angle) / (1 - 10^(db/20))
+yg <- sin(angle) / (1 - 10^(db/20))
+hats <- hat(theta=theta, xg= xg, yg=yg, dec=0, amp=6)
 
-hats <- hat(theta=theta, xg= -0.8, yg=-0.9, dec=0, amp=6)
 error <- sapply((theta-hats) %% 360, function(x) {
-    if(x <= 180) x
-    else if(x >= 180) x-360
+      if(x <= 180) x
+      else if(x >= 180) x-360
 })
 
-ggplot() + geom_line(aes(x=theta, y=error, color='Wrong')) + ylim(-30,30) + 
-    geom_line(aes(x=theta, y=-11.5346*sin(theta*pi/180), color='Right'))
+ggplot() + geom_line(aes(x=theta, y=error, color='Wrong')) + ylim(-30,30) +
+      geom_vline(xintercept = angle * 180 / pi, size=2, alpha=.3) + geom_hline(yintercept=0, size=2, alpha=.3)
+max(error)
+
