@@ -1,6 +1,6 @@
 # Noise matching
 
-noiseMatcher <- function(df) {
+noiseMatcher <- function(df, method='individual') {
       noise <- filter(df, Species %in% c('ambientbig', 'ambientsmall')) %>%
             select(matchDate=UTC, Species, NoiseBearing=DIFARBearing, NoiseAmplitude=SignalAmplitude, Buoy) %>%
             mutate(tone = grepl('small', Species))
@@ -10,6 +10,13 @@ noiseMatcher <- function(df) {
                    matchDate =  UTC)
       data <- data.table(data, key= c('Buoy', 'tone', 'matchDate'))
       noise[data, roll='nearest'] %>% select(-c(matchDate, tone)) %>%
-            mutate(SNR=SignalAmplitude-NoiseAmplitude)
+            group_by(callId) %>% mutate(MedianDifar=median(DIFARBearing, na.rm=TRUE), 
+                                        Time=median(UTC, na.rm=TRUE),
+                                        MedianSA=median(SignalAmplitude, na.rm=TRUE),
+                                        MaxSA=max(SignalAmplitude, na.rm=TRUE)) %>% data.frame %>%
+            mutate(SNR = switch(method,
+                  individual = SignalAmplitude - NoiseAmplitude,
+                  max = MaxSA - NoiseAmplitude,
+                  median = MedianSA - NoiseAmplitude))
+      
 }
-            
