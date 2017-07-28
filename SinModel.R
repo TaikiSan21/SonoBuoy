@@ -47,3 +47,19 @@ ggplot() + geom_line(aes(x=theta, y=error, color='Wrong')) + ylim(-30,30) +
       geom_vline(xintercept = angle * 180 / pi, size=2, alpha=.3) + geom_hline(yintercept=0, size=2, alpha=.3)
 max(error)
 
+
+# Lets draw some fuckin sins, does solving for R actually do anything???
+# GIVEN this received Difar with this noise, whats the actual R.
+# If D and N are farther apart, a low SNR should not be possible. 
+# They would have to be close.
+
+N <- 100 
+D <- 80
+SNR <- 8
+Delta <- 1 / (10^(SNR/20) - 1)
+theta <- seq(0,360, length.out=100)
+Ns <- -1 * Delta * sin((N * pi / 180) - (D * pi / 180))
+Rs <- sapply(theta * pi / 180,function(x) sin(x - (D * pi / 180)))
+
+ggplot(data.frame(theta=theta, Rs=Rs), aes(x=theta, y=Rs)) + geom_line() + geom_hline(yintercept=Ns, color='orange') +
+      geom_vline(xintercept=N, color='red') + geom_vline(xintercept=D, color='darkgreen')

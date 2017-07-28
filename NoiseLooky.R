@@ -18,6 +18,12 @@ source('./DIFAR Testing/callGrouper.R')
 # Shit. Adding to the SNR just means that the values are more skewed towards the real bearing. 
 
 # changed shit to be able to use median or max SA. Play with results more now to compare to first way.
+
+# Does it matter that there is a base level of electrical noise? ie. does absolute value of SA have an effect
+
+##### 7/28 #####
+# Sum of sines formula - when trying to work backward from SNR & DIFAR to Real, should end up as 
+# Acos(phi) + sin(phi)
 buoypath <- './Data/spot_messages_RUST_JLK.csv'
 
 noise <- loadGpsDifar('./DIFAR Testing/NoiseDifferentBox9.sqlite3', buoypath) %>% mutate(
@@ -32,7 +38,7 @@ noisebig <- loadGpsDifar('./DIFAR Testing/BigBoxTest2.sqlite3', buoypath, buoyfu
       RealRound = round(RealBearing/.5)*.5) %>%
       select(-c(Latitude, Longitude, MatchedAngles, snr, RMS, ZeroPeak, PeakPeak, SEL))
 
-noisebig <- callGrouper(noisebig) %>% noiseMatcher(method='max') %>%
+noisebig <- callGrouper(noisebig) %>% noiseMatcher() %>%
       mutate(NoiseDifar = noiseError(SNR, NoiseBearing, RealBearing - 11.7),
              NoiseError = mapply(errorTransform, RealBearing, NoiseDifar + 11.7),
              ErrorDiff = mapply(errorTransform, AdjError, NoiseError),
@@ -70,6 +76,7 @@ noisebig <- select(noisebig, -c(nextTime, nextGroup, TriggerName, BuoyHeading, P
 noisebig %>% filter(grepl('small', Species), Distance > 1000, SNR > 10) %>%
       ggplot(aes(x=abs(AdjError), y=abs(PotentialError), color=abs(PotentialError))) + geom_point(size=2) + #facet_wrap(~Channel) +
       scale_color_gradientn(colors=viridis(256)) + geom_abline(slope=1) + xlim(0, 30) + ylim(0,30)
+
 # What could we get if we could do this
 noisebig %>% filter(Distance > 1000) %>%
       ggplot(aes(x=abs(PotentialError), y=abs(AdjError), color=abs(NoiseError))) + geom_point(size=2) + geom_abline(slope=1) +
