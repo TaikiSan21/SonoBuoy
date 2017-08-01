@@ -37,15 +37,22 @@ noisebig <- loadGpsDifar('./DIFAR Testing/BigBoxTest2.sqlite3', buoypath, buoyfu
       Buoy = factor(Channel, levels=c(0,1,2,3), labels=c('NE', 'SW', 'SE', 'NW')),
       RealRound = round(RealBearing/.5)*.5) %>%
       select(-c(Latitude, Longitude, MatchedAngles, snr, RMS, ZeroPeak, PeakPeak, SEL))
-
-noisebig <- callGrouper(noisebig) %>% noiseMatcher() %>%
+noiseDict <- data.frame(Species = c('dn1', 'dn5', 'dn8', 'upX1', 'upX5', 'upX8',
+                                    'upY1', 'upY5', 'upY8', 'upZ1', 'upZ5', 'upZ8',
+                                    'tone1', 'tone5', 'tone8'),
+                        Noise = c(rep('ambientbig', 12), rep('ambientsmall', 3)))
+noisebig <- callGrouper(noisebig) %>% noiseMatcher(noiseDict, noisename = 'ambient') %>%
       mutate(NoiseDifar = noiseError(SNR, NoiseBearing, RealBearing - 11.7),
              NoiseError = mapply(errorTransform, RealBearing, NoiseDifar + 11.7),
              ErrorDiff = mapply(errorTransform, AdjError, NoiseError),
              PotentialBearing = DIFARBearing + 11.7 + NoiseError,
              PotentialError = mapply(errorTransform, RealBearing, PotentialBearing)
       )
-
+## WTF
+noise <- filter(noisebig, grepl('ambient', Species)) %>%
+      select(matchDate=UTC, Species, NoiseBearing=DIFARBearing, NoiseAmplitude=SignalAmplitude, Channel) %>%
+      merge(noiseDict, by.x = 'Species', by.y = 'Species', all.x = TRUE, sort = FALSE)
+##
 noisebig <- arrange(noisebig, UTC) 
 
 noisebig$nextTime <- noisebig$UTC
@@ -73,7 +80,7 @@ noisebig <- select(noisebig, -c(nextTime, nextGroup, TriggerName, BuoyHeading, P
 # # 
 
 # Check only tones - should have more reliable SNR measures. Removing +5 from SNR
-noisebig %>% filter(grepl('small', Species), Distance > 1000, SNR > 10) %>%
+noisebig %>% filter(grepl('tone', Species), Distance > 1000, SNR > 10) %>%
       ggplot(aes(x=abs(AdjError), y=abs(PotentialError), color=abs(PotentialError))) + geom_point(size=2) + #facet_wrap(~Channel) +
       scale_color_gradientn(colors=viridis(256)) + geom_abline(slope=1) + xlim(0, 30) + ylim(0,30)
 
@@ -112,7 +119,7 @@ noisebig %>% filter(Distance > 1000, abs(AngleError) < 45) %>%
       geom_point() + geom_abline(slope=1) + scale_color_gradientn(colors=viridis(256))
 
 # Polar plot shows angle drifting to noise
-ggplot(data=filter(noisebig, PlaybackNumber==9), aes(y=30-SNR, shape=Species)) +  geom_point(aes(x=PotentialBearing+11.7, color='D')) +
+ggplot(data=filter(noisebig, PlaybackNumber==9), aes(y=30-SNR)) +  geom_point(aes(x=DIFARBearing+11.7, color='D')) +
       geom_point(aes(x=RealBearing, color='R')) +
       geom_point(aes(x=NoiseBearing, color='N')) + 
       geom_hline(yintercept=20) + xlim(0,360) + coord_polar() + facet_wrap(~Channel, nrow=2)

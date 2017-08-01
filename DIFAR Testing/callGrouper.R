@@ -1,7 +1,7 @@
 callGrouper <- function(difar, threshold=.5) {
   callId <- 0
   difar$callId <- callId
-  do.call(rbind, by(difar, difar$Buoy, function(x) {
+  do.call(rbind, by(difar, difar$Channel, function(x) {
     x <- arrange(x, UTC)
     startTime <- x$UTC[1]
     callId <<- callId + 1

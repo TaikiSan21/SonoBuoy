@@ -42,6 +42,10 @@ cal <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperimen
                       buoylocs = './Data/PAST_20170620/Data/spot_messages.csv',
                       buoyfunc = sixTwentyId)
 
+dict <- data.frame(Species = c('upA', 'upB', 'upC', 'dnA', 'dnB', 'dnC', 'toneX', 'toneY', 'toneZ'),
+                   Noise = c('noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep',
+                             'noiseX', 'noiseY', 'noiseZ'))
+ntest <- difar %>% noiseMatcher(dict)
 ## Calibration data looking at how error goes across the path
 cal %>% filter(Distance < 1400) %>% ggplot() + geom_path(aes(x=Longitude, y=Latitude, color=Distance), size=2) + 
       scale_color_gradientn(colors=viridis(256)) + geom_point(aes(x=BuoyLongitude, y=BuoyLatitude)) + facet_wrap(~Channel)
