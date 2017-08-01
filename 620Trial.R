@@ -37,17 +37,17 @@ buoy %>% filter(hour(datetime) > 7 & hour(datetime) < 11, Longitude>-117.360) %>
 difar <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperiment DIFAR - Playback.sqlite3',
                       buoylocs = './Data/PAST_20170620/Data/spot_messages.csv',
                       buoyfunc = sixTwentyId)
-
+# Ids 369:409 seem to be that werid spike in nonsense
 cal <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperiment DIFAR.sqlite3',
                       buoylocs = './Data/PAST_20170620/Data/spot_messages.csv',
-                      buoyfunc = sixTwentyId)
+                      buoyfunc = sixTwentyId) %>% filter(!(Id %in% 369:409))
 
 dict <- data.frame(Species = c('upA', 'upB', 'upC', 'dnA', 'dnB', 'dnC', 'toneX', 'toneY', 'toneZ'),
                    Noise = c('noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep',
                              'noiseX', 'noiseY', 'noiseZ'))
 ntest <- difar %>% noiseMatcher(dict)
 ## Calibration data looking at how error goes across the path
-cal %>% filter(Distance < 1400) %>% ggplot() + geom_path(aes(x=Longitude, y=Latitude, color=Distance), size=2) + 
+cal %>% filter(Distance < 1400, abs(AdjError) < 50) %>% ggplot() + geom_path(aes(x=Longitude, y=Latitude, color=abs(AdjError)), size=2) + 
       scale_color_gradientn(colors=viridis(256)) + geom_point(aes(x=BuoyLongitude, y=BuoyLatitude)) + facet_wrap(~Channel)
 
 # Look at SA between length - seems same.
@@ -101,13 +101,8 @@ difar %>% filter(Distance > 1000) %>% ggplot(aes(x=AdjError, y=as.factor(Station
 meds <- difar %>% group_by(Channel, Station, Species) %>% 
       mutate(Median = median(DIFARBearing, na.rm=TRUE),
              MedBearing = median(RealBearing, na.rm=TRUE),
-             MedError = MedBearing - Median) %>%
-      ungroup %>% data.frame %>% 
-      mutate(AdjMedian = (MedError - 11.7) %% 360,
-             AdjMedian = sapply(AdjMedian, function(x) {
-                   if(is.na(x)) {x}
-                   else if(x > 180) {x - 360}
-                   else {x}}))
+             MedError = mapply(errorTransform, MedBearing, Median + 11.7)) %>%
+      ungroup %>% data.frame
 
 meds %>% filter(Distance > 1000) %>% select(MedBearing, AdjMedian, Channel, Species, Station) %>%
       distinct() %>% ggplot(aes(x=MedBearing, y=AdjMedian)) + geom_point() +
