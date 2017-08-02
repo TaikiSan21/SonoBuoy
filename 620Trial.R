@@ -47,7 +47,7 @@ dict <- data.frame(Species = c('upA', 'upB', 'upC', 'dnA', 'dnB', 'dnC', 'toneX'
                              'noiseX', 'noiseY', 'noiseZ'))
 ntest <- difar %>% noiseMatcher(dict)
 ## Calibration data looking at how error goes across the path
-cal %>% filter(Distance < 1400, abs(AdjError) < 50) %>% ggplot() + geom_path(aes(x=Longitude, y=Latitude, color=abs(AdjError)), size=2) + 
+cal %>% filter(Distance < 1400, abs(AdjError) < 50) %>% ggplot() + geom_path(aes(x=Longitude, y=Latitude, color=as.numeric(UTC)), size=2) + 
       scale_color_gradientn(colors=viridis(256)) + geom_point(aes(x=BuoyLongitude, y=BuoyLatitude)) + facet_wrap(~Channel)
 
 # Look at SA between length - seems same.
