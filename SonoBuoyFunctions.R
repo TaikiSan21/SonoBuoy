@@ -104,17 +104,21 @@ toDirection <- function(angle) {
       else 'N'
 }
 
-difarSixTwenty <- function(...) {
+difarSixTwenty <- function(noiseDict=FALSE, ...) {
       difar <- loadGpsDifar(...) %>%
             mutate(Length=sapply(ClipLength, function(x) {
                   if(x > 3.5) 10
                   else if(x > 1.5) 3
                   else 1}))
+      suppressWarnings(if(noiseDict != FALSE) difar <- difar %>% noiseMatcher(noiseDict))
       difar <- do.call(rbind, lapply(split(difar, difar$Channel), function(x) {
             df <- arrange(x, UTC)
             timeId <- c(2:nrow(df), nrow(df))
             df$TimeDiff <- difftime(df[timeId,]$UTC, df$UTC, units='secs')
-            df$Station <- sapply(1:nrow(df), function(x) sum(df$TimeDiff[1:(x-1)] > 200))
+            df$Next <- sapply(timeId, function(x) {
+                  df$Species[x-1]=='toneZ' & df$Species[x] != 'toneZ'
+            })
+            df$Station <- sapply(1:nrow(df), function(x) sum(df$Next[1:x])+1)
             do.call(rbind, lapply(split(df, df$Station), function(y) {
                   arrange(y, UTC) %>%
                         mutate(Order = 1:n())

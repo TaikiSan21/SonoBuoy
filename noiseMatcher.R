@@ -8,7 +8,7 @@ noiseMatcher <- function(df, dict, noisename = 'noise') {
       data <- filter(df, !(grepl(noisename, Species))) %>%
             mutate(matchDate =  UTC, Noise=Species)
       data <- data.table(data, key= c('Channel', 'Species', 'matchDate'))
-      noise[data, roll='nearest'] %>% select(-c(matchDate, Noise)) %>%
+      noise[data, roll='nearest'] %>% select(-c(matchDate, i.Noise)) %>%
             {if('callId' %in% names(.)) {group_by(., callId) %>% mutate(MedianDifar=median(DIFARBearing, na.rm=TRUE), 
                                         Time=median(UTC, na.rm=TRUE),
                                         MedianSA=median(SignalAmplitude, na.rm=TRUE),

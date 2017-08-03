@@ -9,10 +9,14 @@ library(swfscMisc)
 library(manipulate)
 library(ggjoy)
 source('loadGpsDifar.R')
+source('noiseMatcher.R')
 source('SonoBuoyFunctions.R')
 source('../PAMsbuoy/devel/drawBearing.R')
 buoy <- read.csv('./Data/PAST_20170620/Data/spot_messages.csv') %>%
       mutate(datetime=mdy_hm(datetime))
+##### 8/3 ###
+# Fixing 620 loading function. Want to create gain orders backwards from 123 based just on order received
+# it isn't really the right gains sometimes, but it should be close enough to look at shit better
 ####### 7/25 Notes #####
 # Next plan : Get calibration data for channels 1 and 3. Not sure why calibration ones are different.
 # Then gonna have to go and get noise...ugh. 
@@ -34,18 +38,26 @@ buoy %>% filter(hour(datetime) > 7 & hour(datetime) < 11, Longitude>-117.360) %>
       geom_point(aes(x=Longitude, y=Latitude, color=PlotPoints)) +
       geom_point(data=deploy, aes(x=Longitude, y=Latitude), size=2)
 
+dict <- data.frame(Species = c('upA', 'upB', 'upC', 'dnA', 'dnB', 'dnC', 'toneX', 'toneY', 'toneZ'),
+                   Noise = c('noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep',
+                             'noiseX', 'noiseY', 'noiseZ'))
+
 difar <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperiment DIFAR - Playback.sqlite3',
                       buoylocs = './Data/PAST_20170620/Data/spot_messages.csv',
-                      buoyfunc = sixTwentyId)
+                      buoyfunc = sixTwentyId,
+                      noiseDict = dict)
 # Ids 369:409 seem to be that werid spike in nonsense
 cal <- difarSixTwenty(db='./Data/PAST_20170620/PAST20Jun2017_pg11511_sbExperiment DIFAR.sqlite3',
                       buoylocs = './Data/PAST_20170620/Data/spot_messages.csv',
                       buoyfunc = sixTwentyId) %>% filter(!(Id %in% 369:409))
 
-dict <- data.frame(Species = c('upA', 'upB', 'upC', 'dnA', 'dnB', 'dnC', 'toneX', 'toneY', 'toneZ'),
-                   Noise = c('noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep', 'noiseSweep',
-                             'noiseX', 'noiseY', 'noiseZ'))
+
 ntest <- difar %>% noiseMatcher(dict)
+
+ntest %>% filter(Station==1, Channel==0, grepl('noise', Species))
+#####
+# Matching up calls to gain. Looks like there is always a pattern (esp. in tones) as gain changes
+
 ## Calibration data looking at how error goes across the path
 cal %>% filter(Distance < 1400, abs(AdjError) < 50) %>% ggplot() + geom_path(aes(x=Longitude, y=Latitude, color=as.numeric(UTC)), size=2) + 
       scale_color_gradientn(colors=viridis(256)) + geom_point(aes(x=BuoyLongitude, y=BuoyLatitude)) + facet_wrap(~Channel)
