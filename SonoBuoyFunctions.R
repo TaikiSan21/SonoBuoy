@@ -104,27 +104,36 @@ toDirection <- function(angle) {
       else 'N'
 }
 
+# Don't know why this isn't working. Gain is somehow ending up
+# FUCK. It's the length counter that I'm using.
 difarSixTwenty <- function(noiseDict=FALSE, ...) {
       difar <- loadGpsDifar(...) %>%
             mutate(Length=sapply(ClipLength, function(x) {
                   if(x > 3.5) 10
-                  else if(x > 1.5) 3
+                  else if(x > 1.35) 3
                   else 1}))
       suppressWarnings(if(noiseDict != FALSE) difar <- difar %>% noiseMatcher(noiseDict))
       difar <- do.call(rbind, lapply(split(difar, difar$Channel), function(x) {
+            # Within Channel
             df <- arrange(x, UTC)
             timeId <- c(2:nrow(df), nrow(df))
             df$TimeDiff <- difftime(df[timeId,]$UTC, df$UTC, units='secs')
-            df$Next <- sapply(timeId, function(x) {
+            df$Next <- sapply(c(2,2:nrow(df)), function(x) {
                   df$Species[x-1]=='toneZ' & df$Species[x] != 'toneZ'
             })
             df$Station <- sapply(1:nrow(df), function(x) sum(df$Next[1:x])+1)
             do.call(rbind, lapply(split(df, df$Station), function(y) {
-                  arrange(y, UTC) %>%
-                        mutate(Order = 1:n())
+                  # Within Station
+                  tmp <- arrange(y, UTC)
+                  do.call(rbind, lapply(split(tmp, list(tmp$Species, tmp$Length)), function(z) {
+                        # Within Species & Length
+                        arrange(z, UTC) %>% mutate(Gain = rev(seq(from=3, by=-1, length.out=n())))
+                  })) %>% 
+                        arrange(UTC) %>% mutate(Order = 1:n())
             }))
       }))
-      select(difar, -c(snr, RMS, PeakPeak, ZeroPeak, SEL, PCLocalTime, PCTime, TriggerName, TrackedGroup, TrueBearing, BuoyHeading))      
+      select(difar, -c(snr, RMS, PeakPeak, ZeroPeak, SEL, PCLocalTime, PCTime, 
+                       TriggerName, TrackedGroup, TrueBearing, BuoyHeading))      
 }
 
 errorTransform <- function(bearing1, bearing2) {
