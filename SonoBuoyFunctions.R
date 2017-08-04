@@ -113,7 +113,7 @@ difarSixTwenty <- function(noiseDict=FALSE, ...) {
                   else if(x > 1.35) 3
                   else 1}))
       suppressWarnings(if(noiseDict != FALSE) difar <- difar %>% noiseMatcher(noiseDict))
-      difar <- do.call(rbind, lapply(split(difar, difar$Channel), function(x) {
+      difar <- do.call(rbind, by(difar, difar$Channel, function(x) {
             # Within Channel
             df <- arrange(x, UTC)
             timeId <- c(2:nrow(df), nrow(df))
@@ -122,10 +122,10 @@ difarSixTwenty <- function(noiseDict=FALSE, ...) {
                   df$Species[x-1]=='toneZ' & df$Species[x] != 'toneZ'
             })
             df$Station <- sapply(1:nrow(df), function(x) sum(df$Next[1:x])+1)
-            do.call(rbind, lapply(split(df, df$Station), function(y) {
+            do.call(rbind, by(df, df$Station, function(y) {
                   # Within Station
                   tmp <- arrange(y, UTC)
-                  do.call(rbind, lapply(split(tmp, list(tmp$Species, tmp$Length)), function(z) {
+                  do.call(rbind, by(tmp, list(tmp$Species, tmp$Length), function(z) {
                         # Within Species & Length
                         arrange(z, UTC) %>% mutate(Gain = rev(seq(from=3, by=-1, length.out=n())))
                   })) %>% 
