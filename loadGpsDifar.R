@@ -5,7 +5,7 @@ library(lubridate)
 library(stringr)
 library(data.table)
 library(geosphere)
-source('SonoBuoyFunctions.R')
+source('../SonoBuoy/SonoBuoyFunctions.R')
 
 loadGpsDifar <- function(db, buoylocs = FALSE, buoytz='America/Los_Angeles', buoyfunc) {
       
