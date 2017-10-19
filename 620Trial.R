@@ -63,7 +63,27 @@ ntest %>% filter(Station==1, Channel==0, grepl('noise', Species))
 ## Calibration data looking at how error goes across the path
 cal %>% filter(Distance < 1400, abs(AdjError) < 50) %>% ggplot() + geom_path(aes(x=Longitude, y=Latitude, color=as.numeric(UTC)), size=2) + 
       scale_color_gradientn(colors=viridis(256)) + geom_point(aes(x=BuoyLongitude, y=BuoyLatitude)) + facet_wrap(~Channel)
+# Data for aaron
+aaron <- difar %>% select(-Noise, -MatchedAngles, -ClipLength, -TimeDiff, -Next, -Order,
+                          -DifarAdj, -AdjError, -Gain, -UTCMilliseconds) %>% 
+      mutate(BoatLatitude = Latitude, BoatLongitude = Longitude) %>% select(-Longitude, -Latitude) %>% 
+      select(UTC:BuoyLongitude, BoatLatitude, BoatLongitude, DIFARBearing:Length, Channel:Species, NoiseBearing:NoiseAmplitude,
+             SNR:Station)
 
+df <- loadGpsDifar('./Data/PAST_20160607_POST_PB_Edited.sqlite3',
+                   buoylocs = './Data/spot_messages_RUST_JLK.csv', buoyfunc = firstTrialId)
+aaron2 <- select(df, -PCLocalTime, -PCTime, -ClipLength, -TriggerName, -BuoyHeading, -TrueBearing,
+                 -MatchedAngles, -snr, -RMS, -ZeroPeak, -SEL, -PeakPeak, -DifarAdj, -AdjError) %>%
+      mutate(BoatLatitude = Latitude, BoatLongitude = Longitude, Station=TrackedGroup) %>% 
+      select(-Latitude, -Longitude, -TrackedGroup, -UTCMilliseconds) %>%
+      filter(!(Species %in% c('bulb1', 'bulb2', 'bulb3', 'buzz')))
+# I want polar plots
+station <- 2
+difar %>% filter(Station %in% station) %>%
+      ggplot(aes(y=30-SNR, shape=grepl('tone', Species))) + geom_point(aes(x=DIFARBearing + 11.7, color='Difar')) +
+      geom_point(aes(x=RealBearing, color='Real')) +
+      geom_point(aes(x=NoiseBearing, color='Noise')) +
+      coord_polar() + facet_wrap(~Channel, nrow=2)
 # Look at SA between length - seems same.
 stations <- 6:10
 difar %>% filter(grepl('tone', Species), Station %in% stations) %>% 
@@ -118,9 +138,11 @@ meds <- difar %>% group_by(Channel, Station, Species) %>%
              MedError = mapply(errorTransform, MedBearing, Median + 11.7)) %>%
       ungroup %>% data.frame
 
-meds %>% filter(Distance > 1000) %>% select(MedBearing, AdjMedian, Channel, Species, Station) %>%
-      distinct() %>% ggplot(aes(x=MedBearing, y=AdjMedian)) + geom_point() +
+meds %>% filter(Distance > 1000) %>% select(MedBearing, MedError, Channel, Species, Station) %>%
+      distinct() %>% ggplot(aes(x=MedBearing, y=MedError)) + geom_point() +
+      # geom_hline(yintercept=0, size=3, alpha=.5, color='green') +
       facet_wrap(grepl('tone', Species)~Channel, nrow=2) + ylim(-20,20)
+      
 
 ### JUST TRYING FIRST CAL KINE STUFF
 ## Id 338 ends first round channel 0 365 ends 2nd
