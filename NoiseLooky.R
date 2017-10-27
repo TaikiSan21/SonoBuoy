@@ -119,11 +119,21 @@ noisebig %>% filter(Distance > 1000, abs(AngleError) < 45) %>%
       geom_point() + geom_abline(slope=1) + scale_color_gradientn(colors=viridis(256))
 
 # Polar plot shows angle drifting to noise
-ggplot(data=filter(noisebig, PlaybackNumber==1), aes(y=30-SNR)) +  geom_point(aes(x=DIFARBearing+11.7, color='D')) +
-      geom_point(aes(x=RealBearing, color='R')) +
-      geom_point(aes(x=NoiseBearing, color='N')) + 
-      geom_hline(yintercept=20) + xlim(0,360) + coord_polar() + facet_wrap(~Channel, nrow=2)
-
+ggplot(data=filter(noisebig, PlaybackNumber==1, !grepl('tone', Species)), aes(y=30-SNR)) +  
+      geom_point(aes(x=DIFARBearing+11.7, color='DIFAR + Magnetic Deviation')) +
+      geom_point(aes(x=RealBearing, color='Real Bearing (True)')) +
+      geom_point(aes(x=NoiseBearing+11.7, color='Noise Bearing + Magnetic Deviation')) + 
+      geom_hline(aes(yintercept=20, color='10dB SNR'), size=1) + 
+      scale_y_continuous(labels=c(20, 10, 0), breaks=c(10, 20, 30), limits=c(0,30)) +
+      scale_x_continuous(labels=c(360,90,180,270), breaks=c(0,90,180,270), limits=c(0,360)) +
+      coord_polar() + facet_wrap(~Channel, nrow=2) + 
+      labs(title='Swept Calls Only', x='DIFAR Bearing + Magnetic Deviation', y='SNR') +
+      theme(plot.title = element_text(hjust=.5)) +
+      scale_color_manual(values=c('black','#F8766D','#00BA38','#619CFF'),
+                         guide = guide_legend(override.aes = list(
+                               linetype = c('solid', rep('blank', 3)),
+                               shape = c(NA, 16, 16, 16))))
+      
 
 ggplot(data=noise, aes(x=SNR, y=AdjError)) + geom_point()
 

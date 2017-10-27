@@ -2,6 +2,8 @@ library(PAMsbuoy)
 library(dplyr)
 library(ggplot2)
 library(geosphere)
+source('loadGpsDifar.R')
+source('SonoBuoyFunctions.R')
 
 dbFile <- './Data/HICEAS_2017/Sette/Database/1706_pg11511_sb_35_20170914.sqlite3'
 pamDb <- loadDB(dbFile)
@@ -19,5 +21,8 @@ myData <- loadGpsDifar(dbFile) %>%
       filter(DifarFrequency < 900)
 
 myData %>% filter(Channel==1) %>% 
+      mutate(AngleError = mapply(errorTransform, DIFARBearing + 180, RealBearing)) %>%
       ggplot(aes(x=RealBearing, y=AngleError)) + geom_point(aes(color=as.factor(Channel))) +
       xlim(0,360)
+
+
