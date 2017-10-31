@@ -5,9 +5,9 @@ library(lubridate)
 library(stringr)
 library(data.table)
 library(geosphere)
-source('SonoBuoyFunctions.R')
+source('../SonoBuoy/SonoBuoyFunctions.R')
 
-loadGpsDifar <- function(db, buoylocs = FALSE, buoytz='America/Los_Angeles', buoyfunc) {
+loadGpsDifar <- function(db, buoylocs = FALSE, buoytz='America/Los_Angeles', buoyfunc = NULL) {
       
       if(buoylocs==FALSE) print('No buoy data provided. Will not calculate real distance/bearing.')
       con <- dbConnect(drv=SQLite(), db)
@@ -20,7 +20,7 @@ loadGpsDifar <- function(db, buoylocs = FALSE, buoytz='America/Los_Angeles', buo
       gps <- dbReadTable(con, 'gpsData') %>%
             mutate(UTC = ymd_hms(UTC)) %>%
             select(UTC, Latitude, Longitude)
-      names(gps) <- c('UTC', 'BoatLat', 'BoatLong')
+      names(gps) <- c('UTC', 'BoatLatitude', 'BoatLongitude')
       dbDisconnect(con)
       
       # Using data tables to join boat gps to call times by nearest time
@@ -33,6 +33,7 @@ loadGpsDifar <- function(db, buoylocs = FALSE, buoytz='America/Los_Angeles', buo
       # If buoy gps data is available, linearly get location @ times by interpolating between
       # Interpolating because guoy gps wasn't updated as frequently as boat gps
       if(buoylocs!=FALSE) {
+            if(is.null(buoyfunc)) stop('Need buoyfunc')
             buoy <- read.csv(buoylocs) %>%
                   mutate(UTC = mdy_hm(datetime, tz=buoytz),
                          UTC = with_tz(UTC, tzone='UTC'),
@@ -43,8 +44,8 @@ loadGpsDifar <- function(db, buoylocs = FALSE, buoytz='America/Los_Angeles', buo
                 buoygood <- filter(buoy, Channel == x)
                 locs <- gpsInterp(buoygood$UTC, buoygood$Longitude, buoygood$Latitude, df$UTC)
                 mutate(df, BuoyLatitude = locs$'Latitude', BuoyLongitude = locs$'Longitude')
-            })) %>% mutate(Distance = distGeo(cbind(BuoyLongitude, BuoyLatitude), cbind(BoatLong, BoatLat)),
-                           RealBearing = geosphere::bearing(cbind(BuoyLongitude, BuoyLatitude), cbind(BoatLong, BoatLat)) %% 360,
+            })) %>% mutate(Distance = distGeo(cbind(BuoyLongitude, BuoyLatitude), cbind(BoatLongitude, BoatLatitude)),
+                           RealBearing = geosphere::bearing(cbind(BuoyLongitude, BuoyLatitude), cbind(BoatLongitude, BoatLatitude)) %% 360,
                            AngleError = (RealBearing - DIFARBearing) %% 360,
                            AngleError = sapply(AngleError, function(x) {
                                if(is.na(x)) {x}
@@ -59,7 +60,7 @@ loadGpsDifar <- function(db, buoylocs = FALSE, buoytz='America/Los_Angeles', buo
                                else {x-360}
                            })) %>%
                   select(-Latitude, -Longitude) %>%
-                  rename(Latitude=BoatLat, Longitude=BoatLong)
+                  rename(Latitude=BoatLatitude, Longitude=BoatLongitude)
             # for(i in 1:nrow(difar)){
             #       thisChan <- difar[i, Channel]
             #       thisGps <- gpsInterp(buoy[Channel==thisChan, posixDate],
