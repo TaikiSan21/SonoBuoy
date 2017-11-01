@@ -16,6 +16,13 @@ library(webshot)
 library(RSelenium)
 library(viridisLite)
 
+
+###############################################################################################
+# (1) ASK BEN LIKELIHOOD CONFIDENCE INTERVAL THINGIES TO GET NUMBER AS DIAGNOSTIC INSTEAD OF PICTURE
+# MAYBE TRY TO TO DO ALL OF DRIFT, ANGLE, GREENS CALIBRATION AT ONCE ??? MAYBE.
+
+# sub 2.993 from the max log likelihood to get (1) .95 confidence interval
+###############################################################################################
 expectedBearingDeltaInterval <- function(boat, start, drift.rate, drift.phi, delta=list(rate=0, phi=0, UTC=Inf)) {
     id <- which(boat$UTC < delta$UTC)
     bearings <- rep(0, nrow(boat))
@@ -140,7 +147,7 @@ useme <- loadGpsDifar('./DIFAR Testing/BoatNoiseTest2.sqlite3',
                       './Data/spot_messages_RUST_JLK.csv',
                       buoyfunc = firstTrialId) %>%
     mutate(UTC=ymd_hms(UTC)) %>% filter(Channel==3, Distance > 7) %>% arrange(UTC) %>%
-    mutate(DIFARBearing=DifarAdj)
+    mutate(DIFARBearing=DIFARBearing)
 
 start <- select(useme[1,], UTC, Longitude=BuoyLongitude, Latitude=BuoyLatitude)
 
@@ -179,10 +186,12 @@ a <- ggplot(data=useme) + geom_point(aes(x=Longitude, y=Latitude, color=as.numer
     geom_segment(aes(x=start$Longitude, y=start$Latitude, xend=end[1], yend=end[2]), size=2, color='darkgreen') 
 
 drawBearings(useme %>% mutate(DIFARBearing=(DIFARBearing-180)%% 360), a, distance=.3,alpha=.1)
+
 ggsave('./Drift Diagnostic/Ch0 Difar Far Path.png')
 ### 3D PLOT ###
 mat <- t(matrix(d$value, 181, 75))
 
+plot_ly(z=-log(mat)) %>% add_surface()
 # This works at home, tnsakai google login
 plotly_IMAGE(plot_ly(z=-log(mat)) %>% add_surface(), format='png', out_file = 'test.png')
 

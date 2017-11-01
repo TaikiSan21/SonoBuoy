@@ -10,7 +10,7 @@ source('../PAMsbuoy/devel/drawBearing.R')
 expectedBearing <- function(boat, start, drift.rate, drift.phi) {
     drift.distance <- drift.rate*difftime(boat$UTC, start$UTC, units='secs')*1000/3600 # need m/s
     buoyLoc <- destPoint(c(start$Longitude, start$Latitude), drift.phi, drift.distance)
-    geosphere::bearing(buoyLoc, cbind(boat$Longitude, boat$Latitude))
+    geosphere::bearing(buoyLoc, cbind(boat$BoatLongitude, boat$BoatLatitude))
 }
 
 expectedBearingDelta <- function(boat, start, drift.rate, drift.phi, delta=list(rate=0, phi=0, UTC=Inf)) {
@@ -47,6 +47,7 @@ negLoglDelta <- function(boat, start, params) {
 }
 
 negLogl <- function(boat, start, drift) {
+      # browser()
     expected <- expectedBearing(boat, start, drift[1], drift[2])
     error <- sapply((boat$DIFARBearing - expected) %% 360, function(x) {
         if(x < abs(x-360)) {x}
@@ -57,7 +58,7 @@ negLogl <- function(boat, start, drift) {
 }
 
 fakeData <- function(start=list(Latitude=32.64, Longitude=-117.4, UTC=ymd_hms('2017/6/7 8:20:31')),
-                     times=c(300, 150, 150, 150, 150), rate1=2.5, phi1=0, 
+                     times=c(300, 150, 150, 150, 150), rate1=2.5, phi1=0,
                      delta=list(rate=-.3, phi=-90, brate=0, bphi=0), n=20, sd=5, bias=0,
                      boat=list(Longitude=-117.405, Latitude=32.64, rate=7, phi=50)) {
     first <- destPoint(c(start$Longitude, start$Latitude),phi1, rate1/3.6*times[1])

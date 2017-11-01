@@ -1,8 +1,9 @@
 # Noise matching
-# Need a noise dict to match. Species - Noise
+# Get time diff
 noiseMatcher <- function(df, dict, noisename = 'noise') {
       noise <- filter(df, grepl(noisename, Species)) %>%
-            select(matchDate=UTC, Noise = Species, NoiseBearing=DIFARBearing, NoiseAmplitude=SignalAmplitude, Channel) %>%
+            mutate(NoiseTime=UTC) %>%
+            select(matchDate=UTC, Noise=Species, NoiseBearing=DIFARBearing, NoiseAmplitude=SignalAmplitude, Channel, NoiseTime) %>%
             merge(dict, by.x = 'Noise', by.y = 'Noise', all.x = TRUE, sort = FALSE)
       noise <- data.table(noise, key=c('Channel', 'Species', 'matchDate'))
       data <- filter(df, !(grepl(noisename, Species))) %>%
@@ -15,6 +16,7 @@ noiseMatcher <- function(df, dict, noisename = 'noise') {
                                         MaxSA=max(SignalAmplitude, na.rm=TRUE)) %>% data.frame %>%
             mutate(MaxSNR = MaxSA - NoiseAmplitude,
                    MedianSNR = MedianSA - NoiseAmplitude)} else . } %>% 
-            mutate(SNR = SignalAmplitude - NoiseAmplitude)
+            mutate(SNR = SignalAmplitude - NoiseAmplitude,
+                   NoiseSep = difftime(UTC, NoiseTime, units='secs'))
       
 }
