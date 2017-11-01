@@ -65,3 +65,66 @@ ggmap(hiMap) + geom_point(data=buoyPos, aes(x=(Longitude %% 360)-360, y=Latitude
             panel.grid = element_blank()) +
       xlim(-185, -153) + ylim(16.9, 32.5)
       
+#####################
+# Lets try to automate it
+#####################
+buoyPos$Longitude <- (buoyPos$Longitude %% 360) - 360
+midLat <- median(buoyPos$Latitude)
+midLong <- median(buoyPos$Longitude)
+boundLat <- range(buoyPos$Latitude)
+boundLong <- range(buoyPos$Longitude)
+testMap <- get_map(location = c(boundLong[1], boundLat[1], boundLong[2], boundLat[2]))
+testMap <- get_map(location = c(lon=mean(boundLong), lat=mean(boundLat)), zoom=5) 
+
+zoom <- 5
+
+makeMap <- function(buoys, zoom=8, ...) {
+      boundLong <- range(buoys$Longitude)
+      boundLat <- range(buoys$Latitude)
+      if(zoom==0) {
+            stop('Zoom is 0. Check coordinates for errors.')
+      }
+      suppressMessages(map <- get_map(location = c(lon=mean(boundLong), lat=mean(boundLat)), zoom=zoom))
+      g <- ggmap(map) + geom_point(data=buoys, aes(x=Longitude, y=Latitude, color='Station'), size=3, ...) +
+            labs(x='Longitude', y='Latitude', title='Sonobuoy Stations', color='') +
+            scale_color_manual(values='black') +
+            theme(plot.title = element_text(hjust=.5))
+      tryCatch({
+            print(g)
+            cat('Zoom level', zoom, 'being used.')
+      }, warning = function(w) {
+            cat('Zoom level', zoom, 'is too close. Trying', zoom -1, '. \n')
+            makeMap(buoys, zoom -1)
+      }
+      )
+      g
+}
+
+makeMap <- function(buoys, zoom=8, ...) {
+      boundLong <- range(buoys$Longitude)
+      boundLat <- range(buoys$Latitude)
+      if(zoom==0) {
+            stop('Zoom is 0. Check coordinates for errors.')
+      }
+      suppressMessages(map <- get_map(location = c(lon=mean(boundLong), lat=mean(boundLat)), zoom=zoom))
+      mapRange <- attr(map, 'bb')
+      # Checking if all points are within map range. If not, zoom out 1.
+      if(boundLong[1] < mapRange[2] |
+         boundLong[2] > mapRange[4] |
+         boundLat[1] < mapRange[1] |
+         boundLat[2] > mapRange[3]) {
+            cat('Zoom level', zoom, 'is too close. Trying', zoom-1,'. \n')
+            return(makeMap(buoys, zoom-1))
+      }
+      cat('Zoom level', zoom, 'being used.')
+      g <- ggmap(map) + geom_point(data=buoys, aes(x=Longitude, y=Latitude, color='Station'), size=3, ...) +
+            labs(x='Longitude', y='Latitude', title='Sonobuoy Stations', color='') +
+            scale_color_manual(values='black') +
+            theme(plot.title = element_text(hjust=.5))
+      g
+}
+m <- makeMap(buoyPos[1:8,],8)
+m 
+z <- 6
+
+
