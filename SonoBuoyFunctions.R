@@ -1,5 +1,9 @@
 # Functions for SWFSC sono buoy project
-
+library(data.table)
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(RSQLite)
 # ######################################################################## 
 # gpsInterp is used to create interpolated GPS readings from a set of accurate 
 # GPS readings. Used to find actual sono buoy location for the DIFAR readings we

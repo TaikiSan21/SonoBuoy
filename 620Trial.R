@@ -15,7 +15,7 @@ source('../PAMsbuoy/devel/drawBearing.R')
 buoy <- read.csv('./Data/PAST_20170620/Data/spot_messages.csv') %>%
       mutate(datetime=mdy_hm(datetime))
 #### 8/4 ###
-# Start grabbing noise again at 2000 - its right at the end of a toneZ, BE READY
+# Start grabbing noise again at 2000 - its right at the end of a toneZ, BE READY this is #18
 ##### 8/3 ###
 # Fixing 620 loading function. Want to create gain orders backwards from 123 based just on order received
 # it isn't really the right gains sometimes, but it should be close enough to look at shit better
