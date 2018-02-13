@@ -142,6 +142,5 @@ difarSixTwenty <- function(noiseDict=FALSE, ...) {
 
 errorTransform <- function(bearing1, bearing2) {
       error <- (bearing1 - bearing2) %% 360
-      if(error > 180) {error-360}
-      else {error}
+      ifelse(error > 180, error-360, error)
 }
